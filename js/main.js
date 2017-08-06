@@ -8,12 +8,17 @@ function Game() {
     let canvas = document.getElementById('gc');
     let ctx = canvas.getContext("2d");
     let player = new Player();
-
+    let level = new Level();
+    let start = null;
+    let bodies = [
+        player
+    ];
 
     this.start = function () {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
-        setInterval(loop, 1000 / 30);
+        window.requestAnimationFrame(loop);
+        //setInterval(loop, 1000 / 60);
     };
 
     function onKeydown(e) {
@@ -44,46 +49,83 @@ function Game() {
         }
     }
 
-    function loop() {
+    function loop(timestamp) {
+        //let timestamp = new Date().getTime();
+        let timediff = timestamp - start;
+        if (!start) {
+            start = timestamp;
+            window.requestAnimationFrame(loop);
+            return;
+        }
+
+        start = timestamp;
+        console.log(timediff);
+
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        player.move();
-        player.draw(ctx);
+        level.draw(ctx);
 
-        if (player.x < 0) {
-            player.x = canvas.width;
-        }
-        if (player.x > canvas.width) {
-            player.x = 0;
-        }
-        if (player.y < 0) {
-            player.y = canvas.height;
-        }
-        if (player.y > canvas.height) {
-            player.y = 0;
-        }
+        bodies.forEach(body => {
+            body.move(timediff);
+            body.draw(ctx);
+            //collideBodies(body);
+            level.collide(body);
+
+            if (body.position.x < 0) {
+                body.position.x = canvas.width;
+            }
+            if (body.position.x > canvas.width) {
+                body.position.x = 0;
+            }
+            if (body.position.y < 0) {
+                body.position.y = canvas.height;
+            }
+            if (body.position.y > canvas.height) {
+                body.position.y = 0;
+            }
+        });
+
+
+
+
+        window.requestAnimationFrame(loop);
     }
 }
 
 function Player() {
-    this.x = 400;
-    this.y = 300;
+    this.position = {
+        x: 400,
+        y: 200
+    };
     this.height = 30;
     this.width = 10;
 
     this.angle = 0;
     this.anglespeed = 0;
-    this.anglespeedAccel = 2;
-    this.anglespeedMinMax = 8;
-    this.anglespeedBrake = 5;
+    this.anglespeedAccel = 0.7;
+    this.anglespeedMinMax = 3;
+    this.anglespeedBrake = 3.4;
 
-    this.maxSpeed = 30;
+    this.maxSpeed = 20;
     this.minSpeed = 2;
     this.speed = this.minSpeed;
-    this.acceleration = 0.9;
+    this.acceleration = 0.8;
 
     this.verbose = true;
+    this.vertices = [];
+
+    this.colors = {
+        main: "#F44336",
+        front: "#4CAF50",
+        back: "#795548",
+        debug: "#E91E63"
+    };
+
+    this.controls = {
+        "left": 0,
+        "right": 0
+    };
 
     let defaultVertices = [
         {
@@ -100,53 +142,38 @@ function Player() {
             y: this.height / 2
         }
     ];
-    this.vertices = [];
-
-    this.colors = {
-        main: "#F44336",
-        front: "#4CAF50",
-        back: "#795548",
-        debug: "#E91E63"
-    };
-
-    this.controls = {
-        "left": 0,
-        "right": 0
-    };
-
-    this.reset = function () {
-        this.x = 400;
-        this.y = 300;
-    };
 
     this.updateVertices = function () {
         let newVertices = [];
 
         defaultVertices.forEach((p) => {
-            newVertices.push(Util.movePoint(Util.rotatePoint(p, this.angle), {
-                x: this.x,
-                y: this.y
-            }));
+            newVertices.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
         });
 
         this.vertices = newVertices;
 
     };
 
-    this.move = function () {
+    this.move = function (timediff) {
         this.angle %= 360;
 
         // steering
         if (this.controls["left"] === this.controls["right"]) {
-            this.anglespeed -= Math.sign(this.anglespeed) * this.anglespeedAccel;
+            let sign = Math.sign(this.anglespeed);
+            this.anglespeed -= sign * this.anglespeedAccel;
+            if (sign !== Math.sign(this.anglespeed)) {
+                this.anglespeed = 0;
+            }
         } else if (this.controls["left"]) {
             this.anglespeed -= this.anglespeedAccel;
+            this.angle += this.anglespeed * (timediff / 30);
         } else if (this.controls["right"]) {
             this.anglespeed += this.anglespeedAccel;
+            this.angle += this.anglespeed * (timediff / 30);
         }
-        console.log(this.anglespeed + " " + this.controls.left + " " + this.controls.right);
 
-        this.angle += this.anglespeed;
+        this.angle += this.anglespeed * (timediff / 30);
+
         this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
         this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
 
@@ -159,17 +186,20 @@ function Player() {
 
         //add power to velocity to get new point
 
-        this.x += dx * this.speed;
-        this.y += dy * this.speed;
+        this.lastPosition = this.position;
+        this.position = {
+            x: this.position.x + dx * this.speed * (timediff / 30),
+            y: this.position.y + dy * this.speed * (timediff / 30)
+        };
 
         this.updateVertices();
-        console.log(this.speed);
+        console.log(this.position);
     };
 
     this.draw = function (ctx) {
         ctx.save();
 
-        ctx.translate(this.x, this.y);
+        ctx.translate(this.position.x, this.position.y);
         ctx.rotate(this.angle * Math.PI / 180);
 
         ctx.fillStyle = this.colors.main;
@@ -203,11 +233,105 @@ function Player() {
         this.controls[s] = 1;
     };
 
+    this.onCollide = function (p) {
+        // What to do?
+        console.log("Collision!");
+        this.position = this.lastPosition;
+        this.speed = this.speed / 2;
+    }
+
 
 }
 
 function Level(vertices) {
+    this.vertices = [
+        [{
+            x: 300,
+            y: 25
+        }, {
+            x: 900,
+            y: 25
+        }, {
+            x: 1150,
+            y: 175
+        }, {
+            x: 1150,
+            y: 425
+        }, {
+            x: 900,
+            y: 575
+        }, {
+            x: 300,
+            y: 575
+        }, {
+            x: 50,
+            y: 425
+        }, {
+            x: 50,
+            y: 175
+        }], [
+            {
+                x: 325,
+                y: 250
+            }, {
+                x: 875,
+                y: 250
+            }, {
+                x: 900,
+                y: 275
+            }, {
+                x: 900,
+                y: 325
+            }, {
+                x: 875,
+                y: 350
+            }, {
+                x: 325,
+                y: 350
+            }, {
+                x: 300,
+                y: 325
+            }, {
+                x: 300,
+                y: 275
+            }
+        ]];
 
+    this.draw = function (ctx) {
+
+        this.vertices.forEach(path => {
+            ctx.beginPath();
+            let lastPoint = path[path.length - 1];
+            ctx.moveTo(lastPoint.x, lastPoint.y);
+            path.forEach(p => {
+                ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            });
+
+        });
+    };
+
+    this.collide = function (body) {
+        let result = false;
+        let prevBodyPoint = body.vertices[body.vertices.length - 1];
+        let that = this;
+        body.vertices.some(bodyPoint => {
+            that.vertices.some(polygon => {
+                let prevLevelPoint = polygon[polygon.length - 1];
+                polygon.some(levelPoint => {
+                    if (Util.intersectLineLine(prevBodyPoint, bodyPoint, prevLevelPoint, levelPoint)) {
+                        body.onCollide();
+                        result = true;
+                    }
+                    prevLevelPoint = levelPoint;
+                    return result;
+                });
+                return result
+            });
+            prevBodyPoint = bodyPoint;
+            return result
+        });
+    }
 
 }
 
@@ -225,5 +349,30 @@ let Util = {
             x: point.x + vector.x,
             y: point.y + vector.y
         }
+    },
+
+    intersectLineLine: function (a1, a2, b1, b2) {
+        var result = false;
+
+        var ua_t = (b2.x - b1.x) * (a1.y - b1.y) - (b2.y - b1.y) * (a1.x - b1.x);
+        var ub_t = (a2.x - a1.x) * (a1.y - b1.y) - (a2.y - a1.y) * (a1.x - b1.x);
+        var u_b = (b2.y - b1.y) * (a2.x - a1.x) - (b2.x - b1.x) * (a2.y - a1.y);
+
+        if (u_b != 0) {
+            var ua = ua_t / u_b;
+            var ub = ub_t / u_b;
+
+            if (0 <= ua && ua <= 1 && 0 <= ub && ub <= 1) {
+                result = true;
+                // result.points.push(
+                //     new Point2D(
+                //         a1.x + ua * (a2.x - a1.x),
+                //         a1.y + ua * (a2.y - a1.y)
+                //     )
+                // );
+            }
+        }
+
+        return result;
     }
 };
