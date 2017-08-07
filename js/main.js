@@ -1,10 +1,19 @@
 window.addEventListener('load', () => {
     let game = new Game();
+
+    let track = 'track1';
+    let svg = $.get({
+       url: track + '.svg',
+       async: false
+    });
+
+    game.loadLevel(svg.responseXML);
     game.start();
 });
 
 
 function Game() {
+    const SVG_PRECISION = 50;
     let canvas = document.getElementById('gc');
     let ctx = canvas.getContext("2d");
     let player = new Player();
@@ -14,11 +23,31 @@ function Game() {
         player
     ];
 
+    this.loadLevel = function(svg) {
+        //TODO: use correct vewbox
+        let vertices = [];
+        let svgEl = svg.firstElementChild;
+        // console.dir(svgEl);
+        $(svg).find('path').toArray().forEach(path => {
+           let length = path.getTotalLength();
+           let i = 0;
+           let polygon = [];
+
+           while (i < length) {
+               let point = path.getPointAtLength(i);
+               polygon.push(point);
+               i += SVG_PRECISION;
+           }
+           vertices.push(polygon);
+        });
+
+        level.vertices = vertices;
+    };
+
     this.start = function () {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
         window.requestAnimationFrame(loop);
-        //setInterval(loop, 1000 / 60);
     };
 
     function onKeydown(e) {
@@ -96,12 +125,12 @@ function Game() {
 function Player() {
     this.position = {
         x: 400,
-        y: 200
+        y: 450
     };
     this.height = 30;
     this.width = 10;
 
-    this.angle = 0;
+    this.angle = 90;
     this.anglespeed = 0;
     this.anglespeedAccel = 0.7;
     this.anglespeedMinMax = 3;
@@ -112,7 +141,7 @@ function Player() {
     this.speed = this.minSpeed;
     this.acceleration = 0.8;
 
-    this.verbose = true;
+    this.verbose = false;
     this.vertices = [];
 
     this.colors = {
@@ -193,7 +222,7 @@ function Player() {
         };
 
         this.updateVertices();
-        console.log(this.position);
+        console.log(this.angle);
     };
 
     this.draw = function (ctx) {
