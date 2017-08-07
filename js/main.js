@@ -262,11 +262,16 @@ function Player() {
         this.controls[s] = 1;
     };
 
-    this.onCollide = function (p) {
+    this.onCollide = function (p1, p2) {
         // What to do?
-        console.log("Collision!");
+
         this.position = this.lastPosition;
         this.speed = this.speed / 2;
+
+        let collisionAngle = Math.atan2(p1.x - p2.x, p1.y - p2.y) * 180 / Math.PI;
+        console.log("Collision!" + collisionAngle);
+        this.angle += collisionAngle + 90;
+
     }
 
 
@@ -349,7 +354,7 @@ function Level(vertices) {
                 let prevLevelPoint = polygon[polygon.length - 1];
                 polygon.some(levelPoint => {
                     if (Util.intersectLineLine(prevBodyPoint, bodyPoint, prevLevelPoint, levelPoint)) {
-                        body.onCollide();
+                        body.onCollide(prevLevelPoint, levelPoint);
                         result = true;
                     }
                     prevLevelPoint = levelPoint;
