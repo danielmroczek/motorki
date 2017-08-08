@@ -186,23 +186,25 @@ function Player() {
     this.move = function (timediff) {
         this.angle %= 360;
 
-        // steering
-        if (this.controls["left"] === this.controls["right"]) {
-            let sign = Math.sign(this.anglespeed);
-            this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
-            if (sign !== Math.sign(this.anglespeed)) {
-                this.anglespeed = 0;
+        if (!this.inCollision) {
+            // steering
+            if (this.controls["left"] === this.controls["right"]) {
+                let sign = Math.sign(this.anglespeed);
+                this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
+                if (sign !== Math.sign(this.anglespeed)) {
+                    this.anglespeed = 0;
+                }
+            } else if (this.controls["left"]) {
+                this.anglespeed -= this.anglespeedAccel * (timediff / 30);
+            } else if (this.controls["right"]) {
+                this.anglespeed += this.anglespeedAccel * (timediff / 30);
             }
-        } else if (this.controls["left"]) {
-            this.anglespeed -= this.anglespeedAccel * (timediff / 30);
-        } else if (this.controls["right"]) {
-            this.anglespeed += this.anglespeedAccel * (timediff / 30);
+
+            this.angle += this.anglespeed * (timediff / 30);
+
+            this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
+            this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
         }
-
-        this.angle += this.anglespeed * (timediff / 30);
-
-        this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
-        this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
 
         this.speed += this.acceleration - (Math.abs(this.anglespeed) / this.anglespeedBrake);
         this.speed = Math.min(this.speed, this.maxSpeed);
@@ -344,14 +346,17 @@ function Level(vertices) {
 
     this.collide = function (body) {
         let result = false;
-        let prevBodyPoint = body.vertices[body.vertices.length - 1];
         let that = this;
+        let prevBodyPoint = body.vertices[body.vertices.length - 1];
         body.vertices.some(bodyPoint => {
             that.vertices.some(polygon => {
                 let prevLevelPoint = polygon[polygon.length - 1];
                 polygon.some(levelPoint => {
                     if (Util.intersectLineLine(prevBodyPoint, bodyPoint, prevLevelPoint, levelPoint)) {
-                        body.onCollide(prevLevelPoint, levelPoint);
+                        if (!body.inCollision) {
+                            body.onCollide(prevLevelPoint, levelPoint);
+                            body.inCollision = true;
+                        }
                         result = true;
                     }
                     prevLevelPoint = levelPoint;
@@ -362,6 +367,9 @@ function Level(vertices) {
             prevBodyPoint = bodyPoint;
             return result
         });
+        if (!result) {
+            body.inCollision = false;
+        }
     }
 
 }
