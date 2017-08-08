@@ -88,7 +88,7 @@ function Game() {
         }
 
         start = timestamp;
-        console.log(timediff);
+        //console.log(timediff);
 
         ctx.fillStyle = "white";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -132,9 +132,9 @@ function Player() {
 
     this.angle = 90;
     this.anglespeed = 0;
-    this.anglespeedAccel = 0.7;
-    this.anglespeedMinMax = 3;
-    this.anglespeedBrake = 3.4;
+    this.anglespeedAccel = 1;
+    this.anglespeedMinMax = 4;
+    this.anglespeedBrake = 4.2;
 
     this.maxSpeed = 20;
     this.minSpeed = 2;
@@ -189,16 +189,14 @@ function Player() {
         // steering
         if (this.controls["left"] === this.controls["right"]) {
             let sign = Math.sign(this.anglespeed);
-            this.anglespeed -= sign * this.anglespeedAccel;
+            this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
             if (sign !== Math.sign(this.anglespeed)) {
                 this.anglespeed = 0;
             }
         } else if (this.controls["left"]) {
-            this.anglespeed -= this.anglespeedAccel;
-            this.angle += this.anglespeed * (timediff / 30);
+            this.anglespeed -= this.anglespeedAccel * (timediff / 30);
         } else if (this.controls["right"]) {
-            this.anglespeed += this.anglespeedAccel;
-            this.angle += this.anglespeed * (timediff / 30);
+            this.anglespeed += this.anglespeedAccel * (timediff / 30);
         }
 
         this.angle += this.anglespeed * (timediff / 30);
@@ -222,7 +220,7 @@ function Player() {
         };
 
         this.updateVertices();
-        console.log(this.angle);
+        //console.log(this.angle);
     };
 
     this.draw = function (ctx) {
@@ -268,9 +266,8 @@ function Player() {
         this.position = this.lastPosition;
         this.speed = this.speed / 2;
 
-        let collisionAngle = Math.atan2(p1.x - p2.x, p1.y - p2.y) * 180 / Math.PI;
-        console.log("Collision!" + collisionAngle);
-        this.angle += collisionAngle + 90;
+        let collisionAngle = (Math.atan2(p1.y - p2.y, p1.x - p2.x) * 180 / Math.PI) - 90;
+        this.angle = -this.angle + 2 * (collisionAngle);
 
     }
 
