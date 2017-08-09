@@ -1,19 +1,40 @@
 window.addEventListener('load', () => {
-    let game = new Game();
+    let game;
 
-    let track = 'track1';
-    let svg = $.get({
-       url: track + '.svg',
-       async: false
+    let tracks = [
+        'bydgoszcz',
+        'byMateusz',
+        'berserker'
+    ];
+
+    let sel = document.getElementById('tackList');
+    tracks.forEach(track => {
+        let opt = document.createElement('option');
+        opt.innerHTML = track;
+        opt.value = track;
+        sel.appendChild(opt);
     });
 
-    game.loadLevel(svg.responseXML);
-    game.start();
+
+    restart(tracks[0]);
+
+    sel.addEventListener('change', e => {
+        sel.blur();
+        restart(e.target.value);
+    });
+
+    function restart(track) {
+        if (game) {
+            game.stop();
+        }
+        game = new Game();
+        game.loadLevel('tracks/' + track + '.svg');
+        game.start();
+    }
 });
 
-
 function Game() {
-    const SVG_PRECISION = 50;
+    const SVG_PRECISION = 30;
     let canvas = document.getElementById('gc');
     let ctx = canvas.getContext("2d");
     let player = new Player();
@@ -23,12 +44,16 @@ function Game() {
         player
     ];
 
-    this.loadLevel = function(svg) {
-        //TODO: use correct vewbox
+    this.loadLevel = function (svgSource) {
+        let svg = $.get({
+            url: svgSource,
+            async: false
+        }).responseXML;
+
         let vertices = [];
         let svgEl = svg.firstElementChild;
         // console.dir(svgEl);
-        $(svg).find('path').toArray().forEach(path => {
+        $(svg).find('path.track').toArray().forEach(path => {
            let length = path.getTotalLength();
            let i = 0;
            let polygon = [];
@@ -42,12 +67,19 @@ function Game() {
         });
 
         level.vertices = vertices;
+        level.updateImage(svgSource);
     };
 
     this.start = function () {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
         window.requestAnimationFrame(loop);
+    };
+
+    this.stop = function () {
+        document.removeEventListener("keydown", onKeydown);
+        document.removeEventListener("keyup", onKeyup);
+        this.stopped = true;
     };
 
     function onKeydown(e) {
@@ -115,26 +147,25 @@ function Game() {
             }
         });
 
-
-
-
-        window.requestAnimationFrame(loop);
+        if (!this.stopped) {
+            window.requestAnimationFrame(loop);
+        }
     }
 }
 
 function Player() {
     this.position = {
         x: 400,
-        y: 450
+        y: 350
     };
-    this.height = 30;
-    this.width = 10;
+    this.height = 20;
+    this.width = 7;
 
     this.angle = 90;
     this.anglespeed = 0;
-    this.anglespeedAccel = 1;
-    this.anglespeedMinMax = 4;
-    this.anglespeedBrake = 4.2;
+    this.anglespeedAccel = 1.5;
+    this.anglespeedMinMax = 5;
+    this.anglespeedBrake = 5;
 
     this.maxSpeed = 20;
     this.minSpeed = 2;
@@ -266,7 +297,7 @@ function Player() {
         // What to do?
 
         this.position = this.lastPosition;
-        this.speed = this.speed / 2;
+        this.speed /= 3;
 
         let collisionAngle = (Math.atan2(p1.y - p2.y, p1.x - p2.x) * 180 / Math.PI) - 90;
         this.angle = -this.angle + 2 * (collisionAngle);
@@ -276,7 +307,8 @@ function Player() {
 
 }
 
-function Level(vertices) {
+function Level() {
+    this.svg;
     this.vertices = [
         [{
             x: 300,
@@ -329,19 +361,26 @@ function Level(vertices) {
                 y: 275
             }
         ]];
+    this.verbose = false;
 
     this.draw = function (ctx) {
 
-        this.vertices.forEach(path => {
-            ctx.beginPath();
-            let lastPoint = path[path.length - 1];
-            ctx.moveTo(lastPoint.x, lastPoint.y);
-            path.forEach(p => {
-                ctx.lineTo(p.x, p.y);
-                ctx.stroke();
-            });
+        if (this.img) {
+            ctx.drawImage(this.img, 0, 0);
+        }
 
-        });
+        if (this.verbose) {
+            this.vertices.forEach(path => {
+                ctx.beginPath();
+                let lastPoint = path[path.length - 1];
+                ctx.moveTo(lastPoint.x, lastPoint.y);
+                path.forEach(p => {
+                    ctx.lineTo(p.x, p.y);
+                    ctx.stroke();
+                });
+
+            });
+        }
     };
 
     this.collide = function (body) {
@@ -370,6 +409,11 @@ function Level(vertices) {
         if (!result) {
             body.inCollision = false;
         }
+    }
+
+    this.updateImage = function (svg) {
+        this.img = new Image();
+        this.img.src = svg;
     }
 
 }
