@@ -2,19 +2,21 @@ window.addEventListener('load', () => {
     let game;
 
     let tracks = [
+        '294',
+        'ataq',
+        'berserker',
         'bydgoszcz',
         'byMateusz',
-        'berserker'
+        'hamar'
     ];
 
-    let sel = document.getElementById('tackList');
+    let sel = document.getElementById('trackList');
     tracks.forEach(track => {
         let opt = document.createElement('option');
         opt.innerHTML = track;
         opt.value = track;
         sel.appendChild(opt);
     });
-
 
     restart(tracks[0]);
 
@@ -35,14 +37,18 @@ window.addEventListener('load', () => {
 
 function Game() {
     const SVG_PRECISION = 30;
-    let canvas = document.getElementById('gc');
-    let ctx = canvas.getContext("2d");
-    let player = new Player();
-    let level = new Level();
-    let start = null;
-    let bodies = [
-        player
-    ];
+    const canvas = document.getElementById('gc');
+    const ctx = canvas.getContext("2d");
+    let that = this;
+    that.stopped = false;
+
+    let player;
+    let level;
+    let bodies = [];
+    let starttime;
+
+
+
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -54,44 +60,90 @@ function Game() {
         let svgEl = svg.firstElementChild;
         // console.dir(svgEl);
         $(svg).find('path.track').toArray().forEach(path => {
-           let length = path.getTotalLength();
-           let i = 0;
-           let polygon = [];
+            let length = path.getTotalLength();
+            let i = 0;
+            let polygon = [];
 
-           while (i < length) {
-               let point = path.getPointAtLength(i);
-               polygon.push(point);
-               i += SVG_PRECISION;
-           }
-           vertices.push(polygon);
+            while (i < length) {
+                let point = path.getPointAtLength(i);
+                polygon.push(point);
+                i += SVG_PRECISION;
+            }
+            vertices.push(polygon);
         });
 
+        level = new Level();
         level.vertices = vertices;
         level.updateImage(svgSource);
+
+        $(svg).find('metadata > start').each((i, startPoint) => {
+            startPoint = $(startPoint);
+            level.startPoints.push({
+                x: parseInt(startPoint.attr('x')),
+                y: parseInt(startPoint.attr('y')),
+                angle: startPoint.attr('a'),
+                speed: startPoint.attr('s') // unused for now
+            });
+        });
     };
 
     this.start = function () {
+        player = new Player();
+        that.stopped = null;
+        bodies = [
+            player
+        ];
+
+        let startPoint = level.startPoints[Math.floor(Math.random() * level.startPoints.length)];
+        player.position = {
+            x: startPoint.x,
+            y: startPoint.y,
+        };
+        player.angle = startPoint.angle;
+
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
+
+
         window.requestAnimationFrame(loop);
     };
 
     this.stop = function () {
+        let promise = new Promise((res, rej) => {
+            that.stopped = res;
+        });
+
         document.removeEventListener("keydown", onKeydown);
         document.removeEventListener("keyup", onKeyup);
-        this.stopped = true;
+        return promise;
+    };
+
+    this.restart = function () {
+        this.stop().then(this.start);
+        //setTimeout(0, );
     };
 
     function onKeydown(e) {
+        //todo: move key constant to player
         switch (e.key) {
-            // LEFT
             case "ArrowLeft":
                 player.steerOn("left");
                 break;
 
-            // RIGHT
             case "ArrowRight":
                 player.steerOn("right");
+                break;
+
+            case "r":
+            case "R":
+                that.restart();
+                return;
+        }
+
+        switch (e.key) {
+            case "ArrowLeft":
+            case "ArrowRight":
+                player.started = true;
                 break;
         }
     }
@@ -112,14 +164,14 @@ function Game() {
 
     function loop(timestamp) {
         //let timestamp = new Date().getTime();
-        let timediff = timestamp - start;
-        if (!start) {
-            start = timestamp;
+        let timediff = timestamp - starttime;
+        if (!starttime) {
+            starttime = timestamp;
             window.requestAnimationFrame(loop);
             return;
         }
 
-        start = timestamp;
+        starttime = timestamp;
         //console.log(timediff);
 
         ctx.fillStyle = "white";
@@ -147,8 +199,10 @@ function Game() {
             }
         });
 
-        if (!this.stopped) {
+        if (!that.stopped) {
             window.requestAnimationFrame(loop);
+        } else {
+            that.stopped();
         }
     }
 }
@@ -187,6 +241,8 @@ function Player() {
         "right": 0
     };
 
+    this.started = false;
+
     let defaultVertices = [
         {
             x: -this.width / 2,
@@ -203,6 +259,7 @@ function Player() {
         }
     ];
 
+
     this.updateVertices = function () {
         let newVertices = [];
 
@@ -215,44 +272,46 @@ function Player() {
     };
 
     this.move = function (timediff) {
-        this.angle %= 360;
+        if (this.started) {
+            this.angle %= 360;
 
-        if (!this.inCollision) {
-            // steering
-            if (this.controls["left"] === this.controls["right"]) {
-                let sign = Math.sign(this.anglespeed);
-                this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
-                if (sign !== Math.sign(this.anglespeed)) {
-                    this.anglespeed = 0;
+            if (!this.inCollision) {
+                // steering
+                if (this.controls["left"] === this.controls["right"]) {
+                    let sign = Math.sign(this.anglespeed);
+                    this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
+                    if (sign !== Math.sign(this.anglespeed)) {
+                        this.anglespeed = 0;
+                    }
+                } else if (this.controls["left"]) {
+                    this.anglespeed -= this.anglespeedAccel * (timediff / 30);
+                } else if (this.controls["right"]) {
+                    this.anglespeed += this.anglespeedAccel * (timediff / 30);
                 }
-            } else if (this.controls["left"]) {
-                this.anglespeed -= this.anglespeedAccel * (timediff / 30);
-            } else if (this.controls["right"]) {
-                this.anglespeed += this.anglespeedAccel * (timediff / 30);
+
+                this.angle += this.anglespeed * (timediff / 30);
+
+                this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
+                this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
             }
 
-            this.angle += this.anglespeed * (timediff / 30);
+            this.speed += this.acceleration - (Math.abs(this.anglespeed) / this.anglespeedBrake);
+            this.speed = Math.min(this.speed, this.maxSpeed);
+            this.speed = Math.max(this.speed, this.minSpeed);
 
-            this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
-            this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
+            let dx = Math.sin(this.angle * (Math.PI / 180));
+            let dy = -Math.cos(this.angle * (Math.PI / 180));
+
+            //add power to velocity to get new point
+
+            this.lastPosition = this.position;
+            this.position = {
+                x: this.position.x + dx * this.speed * (timediff / 30),
+                y: this.position.y + dy * this.speed * (timediff / 30)
+            };
+
+            this.updateVertices();
         }
-
-        this.speed += this.acceleration - (Math.abs(this.anglespeed) / this.anglespeedBrake);
-        this.speed = Math.min(this.speed, this.maxSpeed);
-        this.speed = Math.max(this.speed, this.minSpeed);
-
-        let dx = Math.sin(this.angle * (Math.PI / 180));
-        let dy = -Math.cos(this.angle * (Math.PI / 180));
-
-        //add power to velocity to get new point
-
-        this.lastPosition = this.position;
-        this.position = {
-            x: this.position.x + dx * this.speed * (timediff / 30),
-            y: this.position.y + dy * this.speed * (timediff / 30)
-        };
-
-        this.updateVertices();
         //console.log(this.angle);
     };
 
@@ -362,6 +421,7 @@ function Level() {
             }
         ]];
     this.verbose = false;
+    this.startPoints = [];
 
     this.draw = function (ctx) {
 
