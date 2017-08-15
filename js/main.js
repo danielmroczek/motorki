@@ -48,8 +48,6 @@ function Game() {
     let starttime;
 
 
-
-
     this.loadLevel = function (svgSource) {
         let svg = $.get({
             url: svgSource,
@@ -517,5 +515,51 @@ let Util = {
         }
 
         return result;
+    },
+
+    pathToPolygon: function (path, samples) {
+        if (!samples) samples = 0;
+
+        // Put all path segments in a queue
+        for (var segs = [], s = path.pathSegList, i = s.numberOfItems - 1; i >= 0; --i) {
+            segs[i] = s.getItem(i);
+        }
+        var segments = segs.concat();
+
+        var lastSeg = null, points = [], x = 0, y = 0;
+        var addSegmentPoint = function (s) {
+            if (s.pathSegType == SVGPathSeg.PATHSEG_CLOSEPATH) {
+
+            } else {
+                if (s.pathSegType % 2 == 1 && s.pathSegType > 1) {
+                    // All odd-numbered path types are relative, except PATHSEG_CLOSEPATH (1)
+                    x += s.x;
+                    y += s.y;
+                } else {
+                    x = s.x;
+                    y = s.y;
+                }
+                var lastPoint = points[points.length - 1];
+                if (!lastPoint || x != lastPoint[0] || y != lastPoint[1]) {
+                    points.push({
+                        x, y
+                    });
+                }
+            }
+        };
+        for (var d = 0, len = path.getTotalLength(), step = len / samples; d <= len; d += step) {
+            var seg = segments[path.getPathSegAtLength(d)];
+            var pt = path.getPointAtLength(d);
+            if (seg !== lastSeg) {
+                lastSeg = seg;
+                while (segs.length && segs[0] != seg) addSegmentPoint(segs.shift());
+            }
+            var lastPoint = points[points.length - 1];
+            if (!lastPoint || pt.x != lastPoint[0] || pt.y != lastPoint[1]) {
+                points.push(pt);
+            }
+        }
+        for (var i = 0, len = segs.length; i < len; ++i) addSegmentPoint(segs[i]);
+        return points;
     }
 };
