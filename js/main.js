@@ -55,19 +55,9 @@ function Game() {
         }).responseXML;
 
         let vertices = [];
-        let svgEl = svg.firstElementChild;
-        // console.dir(svgEl);
         $(svg).find('path.track').toArray().forEach(path => {
-            let length = path.getTotalLength();
-            let i = 0;
-            let polygon = [];
-
-            while (i < length) {
-                let point = path.getPointAtLength(i);
-                polygon.push(point);
-                i += SVG_PRECISION;
-            }
-            vertices.push(polygon);
+            let points = Util.pathToPoints(path, SVG_PRECISION);
+            vertices.push(points);
         });
 
         level = new Level();
@@ -467,7 +457,7 @@ function Level() {
         if (!result) {
             body.inCollision = false;
         }
-    }
+    };
 
     this.updateImage = function (svg) {
         this.img = new Image();
@@ -517,49 +507,67 @@ let Util = {
         return result;
     },
 
-    pathToPolygon: function (path, samples) {
-        if (!samples) samples = 0;
-
-        // Put all path segments in a queue
-        for (var segs = [], s = path.pathSegList, i = s.numberOfItems - 1; i >= 0; --i) {
-            segs[i] = s.getItem(i);
+    pathToPoints: function (path, distance) {
+        if (!distance) {
+            distance = 100;
         }
-        var segments = segs.concat();
 
-        var lastSeg = null, points = [], x = 0, y = 0;
-        var addSegmentPoint = function (s) {
-            if (s.pathSegType == SVGPathSeg.PATHSEG_CLOSEPATH) {
+        let output = [];
+        let lengthPath = document.createElementNS("http://www.w3.org/2000/svg", 'path');
 
-            } else {
-                if (s.pathSegType % 2 == 1 && s.pathSegType > 1) {
-                    // All odd-numbered path types are relative, except PATHSEG_CLOSEPATH (1)
-                    x += s.x;
-                    y += s.y;
-                } else {
-                    x = s.x;
-                    y = s.y;
-                }
-                var lastPoint = points[points.length - 1];
-                if (!lastPoint || x != lastPoint[0] || y != lastPoint[1]) {
-                    points.push({
-                        x, y
-                    });
-                }
+        let segList = path.pathSegList;
+        let segLengthList = [];
+        let lastAddedLength = null;
+
+        for (let i = 0; i < segList.numberOfItems; i += 1) {
+            let segment = segList.getItem(i);
+            lengthPath.pathSegList.appendItem(segment);
+            let currentLength = lengthPath.getTotalLength();
+            if (currentLength != lastAddedLength) {
+                segLengthList.push({
+                    length: currentLength,
+                    type: segment.pathSegTypeAsLetter.toUpperCase()
+
+                });
+                lastAddedLength = currentLength;
             }
+        }
+
+        let interpolate = function(length, length2) {
+            let segmentLength = length2 - length;
+            if (segmentLength < distance) {
+                return [];
+            }
+
+            let howMany = Math.ceil(segmentLength / distance);
+            let step = segmentLength / howMany;
+            let points = [];
+
+            for (let i = 0; i < howMany; i += 1) {
+                length += step;
+                let point = path.getPointAtLength(length);
+                points.push(point);
+            }
+
+            return points;
         };
-        for (var d = 0, len = path.getTotalLength(), step = len / samples; d <= len; d += step) {
-            var seg = segments[path.getPathSegAtLength(d)];
-            var pt = path.getPointAtLength(d);
-            if (seg !== lastSeg) {
-                lastSeg = seg;
-                while (segs.length && segs[0] != seg) addSegmentPoint(segs.shift());
-            }
-            var lastPoint = points[points.length - 1];
-            if (!lastPoint || pt.x != lastPoint[0] || pt.y != lastPoint[1]) {
-                points.push(pt);
+
+        for (let i = 1; i < segLengthList.length; i += 1) {
+            let prevSegment = segLengthList[i - 1];
+            output.push(path.getPointAtLength(prevSegment.length));
+            let currSegment = segLengthList[i];
+            switch (currSegment.type) {
+                case 'C':
+                case 'T':
+                case 'S':
+                case 'Q':
+                case 'A':
+                    let points = interpolate(prevSegment.length, currSegment.length);
+                    output = output.concat(points);
+                    break;
             }
         }
-        for (var i = 0, len = segs.length; i < len; ++i) addSegmentPoint(segs[i]);
-        return points;
+
+        return output;
     }
 };
