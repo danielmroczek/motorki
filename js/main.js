@@ -36,7 +36,7 @@ window.addEventListener('load', () => {
 });
 
 function Game() {
-    const SVG_PRECISION = 30;
+    const SVG_PRECISION = 1.001; // closer to 1 -> better precision
     const canvas = document.getElementById('gc');
     const ctx = canvas.getContext("2d");
     let that = this;
@@ -408,7 +408,7 @@ function Level() {
                 y: 275
             }
         ]];
-    this.verbose = false;
+    this.verbose = true;
     this.startPoints = [];
 
     this.draw = function (ctx) {
@@ -507,67 +507,85 @@ let Util = {
         return result;
     },
 
-    pathToPoints: function (path, distance) {
-        if (!distance) {
-            distance = 100;
+
+
+    pathToPoints: function pathToPointsAdaptiveSegments(path, tolerance, minDistance) {
+        if (!path) {
+            return [];
         }
 
-        let output = [];
-        let lengthPath = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+        tolerance = tolerance || 1.005;
+        minDistance = minDistance || 5;
 
-        let segList = path.pathSegList;
-        let segLengthList = [];
-        let lastAddedLength = null;
+        let getSegmentData = function (path) {
+            let segList = path.pathSegList;
 
-        for (let i = 0; i < segList.numberOfItems; i += 1) {
-            let segment = segList.getItem(i);
-            lengthPath.pathSegList.appendItem(segment);
-            let currentLength = lengthPath.getTotalLength();
-            if (currentLength != lastAddedLength) {
-                segLengthList.push({
-                    length: currentLength,
-                    type: segment.pathSegTypeAsLetter.toUpperCase()
+            let segLengthList = [];
+            let lastAddedLength = null;
+            let lengthPath = document.createElementNS("http://www.w3.org/2000/svg", 'path');
 
-                });
-                lastAddedLength = currentLength;
+            for (let i = 0; i < segList.numberOfItems; i += 1) {
+                let segment = segList.getItem(i);
+                lengthPath.pathSegList.appendItem(segment);
+                let currentLength = lengthPath.getTotalLength();
+                if (currentLength != lastAddedLength) {
+                    segLengthList.push({
+                        length: currentLength,
+                        type: segment.pathSegTypeAsLetter.toUpperCase()
+
+                    });
+                    lastAddedLength = currentLength;
+                }
             }
-        }
+            return segLengthList;
+        };
 
-        let interpolate = function(length, length2) {
-            let segmentLength = length2 - length;
-            if (segmentLength < distance) {
+        let segInfo = getSegmentData(path);
+        console.dir(segInfo);
+
+        let getDist = function (p1, p2) {
+            return Math.sqrt(
+                (Math.pow(p1.x - p2.x, 2)) +
+                (Math.pow(p1.y - p2.y, 2))
+            );
+        };
+
+        let interpolate = function (start, end) {
+            let realDist = Math.abs(end - start);
+            let p1 = path.getPointAtLength(start);
+            let p2 = path.getPointAtLength(end);
+            let fakeDist = getDist(p1, p2);
+
+            if (realDist === 0) {
                 return [];
             }
 
-            let howMany = Math.ceil(segmentLength / distance);
-            let step = segmentLength / howMany;
-            let points = [];
-
-            for (let i = 0; i < howMany; i += 1) {
-                length += step;
-                let point = path.getPointAtLength(length);
-                points.push(point);
+            if (fakeDist !== 0 && realDist / fakeDist <= tolerance) {
+                return [];
             }
 
-            return points;
+            if (fakeDist !== 0 && fakeDist <= minDistance) {
+                return [];
+            }
+
+            let half = realDist / 2 + start;
+
+            return [].concat(
+                interpolate(start, half),
+                path.getPointAtLength(half),
+                interpolate(half, end)
+            )
         };
 
-        for (let i = 1; i < segLengthList.length; i += 1) {
-            let prevSegment = segLengthList[i - 1];
-            output.push(path.getPointAtLength(prevSegment.length));
-            let currSegment = segLengthList[i];
-            switch (currSegment.type) {
-                case 'C':
-                case 'T':
-                case 'S':
-                case 'Q':
-                case 'A':
-                    let points = interpolate(prevSegment.length, currSegment.length);
-                    output = output.concat(points);
-                    break;
-            }
+        let output = [];
+        for (let i = 1; i < segInfo.length; i += 1) {
+            output.push(path.getPointAtLength(segInfo[i - 1].length));
+            output.push(interpolate(segInfo[i - 1].length, segInfo[i].length));
         }
 
-        return output;
+        output.push(path.getPointAtLength(segInfo[segInfo.length - 1].length));
+
+        return [].concat(...output);
     }
+
 };
