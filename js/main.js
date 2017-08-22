@@ -34,7 +34,6 @@ window.addEventListener('load', () => {
         game.start();
     }
 });
-
 function Game() {
     const SVG_PRECISION = 1.001; // closer to 1 -> better precision
     const canvas = document.getElementById('gc');
@@ -46,7 +45,6 @@ function Game() {
     let level;
     let bodies = [];
     let starttime;
-
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -194,7 +192,6 @@ function Game() {
         }
     }
 }
-
 function Player() {
     this.position = {
         x: 400,
@@ -353,61 +350,9 @@ function Player() {
 
 
 }
-
 function Level() {
     this.svg;
-    this.vertices = [
-        [{
-            x: 300,
-            y: 25
-        }, {
-            x: 900,
-            y: 25
-        }, {
-            x: 1150,
-            y: 175
-        }, {
-            x: 1150,
-            y: 425
-        }, {
-            x: 900,
-            y: 575
-        }, {
-            x: 300,
-            y: 575
-        }, {
-            x: 50,
-            y: 425
-        }, {
-            x: 50,
-            y: 175
-        }], [
-            {
-                x: 325,
-                y: 250
-            }, {
-                x: 875,
-                y: 250
-            }, {
-                x: 900,
-                y: 275
-            }, {
-                x: 900,
-                y: 325
-            }, {
-                x: 875,
-                y: 350
-            }, {
-                x: 325,
-                y: 350
-            }, {
-                x: 300,
-                y: 325
-            }, {
-                x: 300,
-                y: 275
-            }
-        ]];
+    this.vertices = [];
     this.verbose = true;
     this.startPoints = [];
 
@@ -464,6 +409,35 @@ function Level() {
         this.img.src = svg;
     }
 
+}
+
+function Vertex(x1, y1, x2, y2) {
+    this.p1 = {
+        x: x1,
+        y: y1
+    };
+    this.p2 = {
+        x: x2,
+        y: y2
+    };
+
+    this.x = Math.min(x1, x2);
+    this.y = Math.min(y1, y2);
+
+    this.width = Math.max(x1, x2) - this.x;
+    this.height = Math.max(y1, y2) - this.y;
+
+    function boundingBoxCollision(vertex) {
+        return this.x < vertex.x + vertex.width &&
+            this.x + this.width > vertex.x &&
+            this.y < vertex.y + vertex.height &&
+            this.height + this.y > vertex.y;
+    }
+
+    this.collide = function (vertex) {
+        return boundingBoxCollision(vertex) &&
+            Util.intersectLineLine(this.p1, this.p2, vertex.p1, vertex.p2);
+    }
 }
 
 let Util = {
