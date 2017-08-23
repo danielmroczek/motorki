@@ -34,6 +34,7 @@ window.addEventListener('load', () => {
         game.start();
     }
 });
+
 function Game() {
     const SVG_PRECISION = 1.001; // closer to 1 -> better precision
     const canvas = document.getElementById('gc');
@@ -55,7 +56,7 @@ function Game() {
         let vertices = [];
         $(svg).find('path.track').toArray().forEach(path => {
             let points = Util.pathToPoints(path, SVG_PRECISION);
-            vertices.push(points);
+            vertices = vertices.concat(Util.pointsToVertices(points));
         });
 
         level = new Level();
@@ -246,14 +247,15 @@ function Player() {
 
 
     this.updateVertices = function () {
-        let newVertices = [];
-
-        defaultVertices.forEach((p) => {
-            newVertices.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
+        let points = [];
+        defaultVertices.forEach(p => {
+            points.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
         });
 
-        this.vertices = newVertices;
+        points.push(points[0]);
+        let newVertices = Util.pointsToVertices(points);
 
+        this.vertices = newVertices;
     };
 
     this.move = function (timediff) {
@@ -337,13 +339,13 @@ function Player() {
         this.controls[s] = 1;
     };
 
-    this.onCollide = function (p1, p2) {
+    this.onCollide = function (vertex) {
         // What to do?
 
         this.position = this.lastPosition;
         this.speed /= 3;
 
-        let collisionAngle = (Math.atan2(p1.y - p2.y, p1.x - p2.x) * 180 / Math.PI) - 90;
+        let collisionAngle = (Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90;
         this.angle = -this.angle + 2 * (collisionAngle);
 
     }
@@ -353,7 +355,7 @@ function Player() {
 function Level() {
     this.svg;
     this.vertices = [];
-    this.verbose = true;
+    this.verbose = false;
     this.startPoints = [];
 
     this.draw = function (ctx) {
@@ -379,24 +381,17 @@ function Level() {
     this.collide = function (body) {
         let result = false;
         let that = this;
-        let prevBodyPoint = body.vertices[body.vertices.length - 1];
-        body.vertices.some(bodyPoint => {
-            that.vertices.some(polygon => {
-                let prevLevelPoint = polygon[polygon.length - 1];
-                polygon.some(levelPoint => {
-                    if (Util.intersectLineLine(prevBodyPoint, bodyPoint, prevLevelPoint, levelPoint)) {
-                        if (!body.inCollision) {
-                            body.onCollide(prevLevelPoint, levelPoint);
-                            body.inCollision = true;
-                        }
-                        result = true;
+        body.vertices.some(bodyVertex => {
+            that.vertices.some(levelVertex => {
+                if (levelVertex.collide(bodyVertex)) {
+                    if (!body.inCollision) {
+                        body.onCollide(levelVertex);
+                        body.inCollision = true;
                     }
-                    prevLevelPoint = levelPoint;
-                    return result;
-                });
-                return result
+                    result = true;
+                }
+                return result;
             });
-            prevBodyPoint = bodyPoint;
             return result
         });
         if (!result) {
@@ -411,32 +406,28 @@ function Level() {
 
 }
 
-function Vertex(x1, y1, x2, y2) {
-    this.p1 = {
-        x: x1,
-        y: y1
-    };
-    this.p2 = {
-        x: x2,
-        y: y2
-    };
+function Vertex(p1, p2) {
+    this.p1 = p1;
+    this.p2 = p2;
 
-    this.x = Math.min(x1, x2);
-    this.y = Math.min(y1, y2);
+    this.x = Math.min(p1.x, p2.x);
+    this.y = Math.min(p1.y, p2.y);
 
-    this.width = Math.max(x1, x2) - this.x;
-    this.height = Math.max(y1, y2) - this.y;
+    this.width = Math.max(p1.x, p2.x) - this.x;
+    this.height = Math.max(p1.y, p2.y) - this.y;
+
+    let that = this;
 
     function boundingBoxCollision(vertex) {
-        return this.x < vertex.x + vertex.width &&
-            this.x + this.width > vertex.x &&
-            this.y < vertex.y + vertex.height &&
-            this.height + this.y > vertex.y;
+        return that.x < vertex.x + vertex.width &&
+            that.x + that.width > vertex.x &&
+            that.y < vertex.y + vertex.height &&
+            that.height + that.y > vertex.y;
     }
 
     this.collide = function (vertex) {
-        return boundingBoxCollision(vertex) &&
-            Util.intersectLineLine(this.p1, this.p2, vertex.p1, vertex.p2);
+        return boundingBoxCollision(vertex) && Util.intersectLineLine(this.p1, this.p2, vertex.p1, vertex.p2);
+
     }
 }
 
@@ -448,14 +439,12 @@ let Util = {
             y: Math.sin(angle) * (point.x) + Math.cos(angle) * (point.y)
         };
     },
-
     movePoint: function (point, vector) {
         return {
             x: point.x + vector.x,
             y: point.y + vector.y
         }
     },
-
     intersectLineLine: function (a1, a2, b1, b2) {
         var result = false;
 
@@ -480,9 +469,6 @@ let Util = {
 
         return result;
     },
-
-
-
     pathToPoints: function pathToPointsAdaptiveSegments(path, tolerance, minDistance) {
         if (!path) {
             return [];
@@ -560,6 +546,16 @@ let Util = {
         output.push(path.getPointAtLength(segInfo[segInfo.length - 1].length));
 
         return [].concat(...output);
+    },
+    pointsToVertices: function (points) {
+        let vertices = [];
+        for (let i = 1; i < points.length; i += 1) {
+            let p1 = points[i - 1];
+            let p2 = points[i];
+            let v = new Vertex(p1, p2);
+            vertices.push(v);
+        }
+        return vertices;
     }
 
 };
