@@ -1,4 +1,6 @@
 window.addEventListener('load', () => {
+    paper.install(window);
+
     let game;
 
     let tracks = [
@@ -17,6 +19,8 @@ window.addEventListener('load', () => {
         opt.value = track;
         sel.appendChild(opt);
     });
+
+    // view.draw();
 
     restart(tracks[0]);
 
@@ -37,6 +41,7 @@ window.addEventListener('load', () => {
 
 function Game() {
     const SVG_PRECISION = 1.001; // closer to 1 -> better precision
+    const FPS = 60;
     const canvas = document.getElementById('gc');
     const ctx = canvas.getContext("2d");
     let that = this;
@@ -46,6 +51,8 @@ function Game() {
     let level;
     let bodies = [];
     let starttime;
+
+    //paper.setup(canvas);
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -91,8 +98,8 @@ function Game() {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
-
-        window.requestAnimationFrame(loop);
+        window.requestAnimationFrame(drawLoop);
+        setTimeout(loop, 1000 / FPS);
     };
 
     this.stop = function () {
@@ -149,26 +156,20 @@ function Game() {
         }
     }
 
-    function loop(timestamp) {
-        //let timestamp = new Date().getTime();
+    function loop() {
+        let timestamp = new Date().getTime();
         let timediff = timestamp - starttime;
         if (!starttime) {
             starttime = timestamp;
-            window.requestAnimationFrame(loop);
+            setTimeout(loop, 1000 / FPS);
             return;
         }
 
         starttime = timestamp;
         //console.log(timediff);
 
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        level.draw(ctx);
-
         bodies.forEach(body => {
             body.move(timediff);
-            body.draw(ctx);
             //collideBodies(body);
             level.collide(body);
 
@@ -187,10 +188,23 @@ function Game() {
         });
 
         if (!that.stopped) {
-            window.requestAnimationFrame(loop);
+            setTimeout(loop, 1000 / FPS);
         } else {
             that.stopped();
         }
+    }
+
+    function drawLoop() {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        level.draw(ctx);
+
+        bodies.forEach(body => {
+            body.draw(ctx);
+        });
+
+        window.requestAnimationFrame(drawLoop);
     }
 }
 function Player() {
@@ -304,6 +318,15 @@ function Player() {
 
     this.draw = function (ctx) {
         ctx.save();
+
+        let points = [];
+        this.vertices.forEach(v => {
+            points.push([v.p1.x, v.p1.y]);
+        });
+
+        //let body = new Path(points);
+        //body.strokeColor = 'black';
+        //body.fillColor = 'white';
 
         ctx.translate(this.position.x, this.position.y);
         ctx.rotate(this.angle * Math.PI / 180);
