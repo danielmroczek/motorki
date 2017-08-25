@@ -95,8 +95,16 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+body {
+    overflow: hidden;
+}
+
 canvas {
     display: block;
+    width: 100vmin;
+    height: 70vmin;
+    margin: 0 auto;
+    /*border: 1px solid black;*/
 }
 
 

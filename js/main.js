@@ -40,8 +40,12 @@ window.addEventListener('load', () => {
 function Game() {
     const SVG_PRECISION = 1.001; // closer to 1 -> better precision
     const FPS = 60;
+    const HEIGHT = 448;
+    const WIDTH = 640;
     const canvas = document.getElementById('gc');
     const ctx = canvas.getContext("2d");
+    let map = new Rectangle(new Point(0,0), [WIDTH, HEIGHT]);
+    let center = map.getCenter();
     let that = this;
     that.stopped = false;
 
@@ -53,6 +57,7 @@ function Game() {
     // Paper.js things
     paper.setup(canvas);
     view.onFrame = drawLoop;
+    view.onResize = onResize;
     view.draw();
 
     this.loadLevel = function (svgSource) {
@@ -96,6 +101,9 @@ function Game() {
             y: startPoint.y,
         };
         player.angle = startPoint.angle;
+
+        view.setViewSize(canvas.width, canvas.height);
+        onResize();
 
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
@@ -174,18 +182,18 @@ function Game() {
             //collideBodies(body);
             level.collide(body);
 
-            if (body.position.x < 0) {
-                body.position.x = canvas.width;
-            }
-            if (body.position.x > canvas.width) {
-                body.position.x = 0;
-            }
-            if (body.position.y < 0) {
-                body.position.y = canvas.height;
-            }
-            if (body.position.y > canvas.height) {
-                body.position.y = 0;
-            }
+            // if (body.position.x < 0) {
+            //     body.position.x = canvas.width;
+            // }
+            // if (body.position.x > canvas.width) {
+            //     body.position.x = 0;
+            // }
+            // if (body.position.y < 0) {
+            //     body.position.y = canvas.height;
+            // }
+            // if (body.position.y > canvas.height) {
+            //     body.position.y = 0;
+            // }
         });
 
         if (!that.stopped) {
@@ -206,6 +214,11 @@ function Game() {
         });
 
         //window.requestAnimationFrame(drawLoop);
+    }
+
+    function onResize(event) {
+        view.setZoom(view.getViewSize().getWidth() / WIDTH);
+        view.setCenter(center);
     }
 }
 function Player() {
@@ -328,7 +341,7 @@ function Player() {
 
         body.position = new Point(this.position);
         body.rotation = this.angle;
-        console.log(body.rotation);
+        //console.log(body.rotation);
 
         // ctx.save();
         //
@@ -442,7 +455,6 @@ function Level() {
     }
 
 }
-
 function Vertex(p1, p2) {
     this.p1 = p1;
     this.p2 = p2;
