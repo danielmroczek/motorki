@@ -20,8 +20,6 @@ window.addEventListener('load', () => {
         sel.appendChild(opt);
     });
 
-    // view.draw();
-
     restart(tracks[0]);
 
     sel.addEventListener('change', e => {
@@ -52,7 +50,10 @@ function Game() {
     let bodies = [];
     let starttime;
 
-    //paper.setup(canvas);
+    // Paper.js things
+    paper.setup(canvas);
+    view.onFrame = drawLoop;
+    view.draw();
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -68,6 +69,7 @@ function Game() {
 
         level = new Level();
         level.vertices = vertices;
+        level.layer.importSVG(svg);
         level.updateImage(svgSource);
 
         $(svg).find('metadata > start').each((i, startPoint) => {
@@ -98,7 +100,7 @@ function Game() {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
-        window.requestAnimationFrame(drawLoop);
+        //window.requestAnimationFrame(drawLoop);
         setTimeout(loop, 1000 / FPS);
     };
 
@@ -114,7 +116,6 @@ function Game() {
 
     this.restart = function () {
         this.stop().then(this.start);
-        //setTimeout(0, );
     };
 
     function onKeydown(e) {
@@ -158,15 +159,15 @@ function Game() {
 
     function loop() {
         let timestamp = new Date().getTime();
-        let timediff = timestamp - starttime;
         if (!starttime) {
             starttime = timestamp;
             setTimeout(loop, 1000 / FPS);
             return;
         }
+        let timediff = timestamp - starttime;
 
         starttime = timestamp;
-        //console.log(timediff);
+        // console.log(timediff);
 
         bodies.forEach(body => {
             body.move(timediff);
@@ -195,16 +196,16 @@ function Game() {
     }
 
     function drawLoop() {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // ctx.fillStyle = "white";
+        // ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        level.draw(ctx);
+        // level.draw(ctx);
 
         bodies.forEach(body => {
-            body.draw(ctx);
+            body.draw();
         });
 
-        window.requestAnimationFrame(drawLoop);
+        //window.requestAnimationFrame(drawLoop);
     }
 }
 function Player() {
@@ -259,6 +260,11 @@ function Player() {
         }
     ];
 
+    let body = new Path.Rectangle(this.position, [this.width, this.height]);
+    body.strokeColor = this.colors.front;
+    body.fillColor = this.colors.main;
+    body.applyMatrix = false;
+
 
     this.updateVertices = function () {
         let points = [];
@@ -311,47 +317,53 @@ function Player() {
                 y: this.position.y + dy * this.speed * (timediff / 30)
             };
 
+            //console.log(this.speed);
             this.updateVertices();
         }
         //console.log(this.angle);
     };
 
     this.draw = function (ctx) {
-        ctx.save();
 
-        let points = [];
-        this.vertices.forEach(v => {
-            points.push([v.p1.x, v.p1.y]);
-        });
+        body.position = new Point(this.position);
+        body.rotation = this.angle;
+        console.log(body.rotation);
 
-        //let body = new Path(points);
-        //body.strokeColor = 'black';
-        //body.fillColor = 'white';
-
-        ctx.translate(this.position.x, this.position.y);
-        ctx.rotate(this.angle * Math.PI / 180);
-
-        ctx.fillStyle = this.colors.main;
-        ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-
-        ctx.fillStyle = this.colors.front;
-        ctx.fillRect(-this.width / 2, (-this.height / 2) - 2, this.width, 6);
-
-        ctx.fillStyle = this.colors.back;
-        ctx.fillRect(-this.width / 2, (this.height / 2) - 2, this.width, 6);
-
-        ctx.restore();
-
-        if (this.verbose) {
-            ctx.beginPath();
-            this.vertices.forEach((p) => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI, false);
-                ctx.fillStyle = this.colors.debug;
-                ctx.fill();
-            });
-
-        }
+        // ctx.save();
+        //
+        // let points = [];
+        // this.vertices.forEach(v => {
+        //     points.push([v.p1.x, v.p1.y]);
+        // });
+        //
+        // //let body = new Path(points);
+        // //body.strokeColor = 'black';
+        // //body.fillColor = 'white';
+        //
+        // ctx.translate(this.position.x, this.position.y);
+        // ctx.rotate(this.angle * Math.PI / 180);
+        //
+        // ctx.fillStyle = this.colors.main;
+        // ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+        //
+        // ctx.fillStyle = this.colors.front;
+        // ctx.fillRect(-this.width / 2, (-this.height / 2) - 2, this.width, 6);
+        //
+        // ctx.fillStyle = this.colors.back;
+        // ctx.fillRect(-this.width / 2, (this.height / 2) - 2, this.width, 6);
+        //
+        // ctx.restore();
+        //
+        // if (this.verbose) {
+        //     ctx.beginPath();
+        //     this.vertices.forEach((p) => {
+        //         ctx.beginPath();
+        //         ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI, false);
+        //         ctx.fillStyle = this.colors.debug;
+        //         ctx.fill();
+        //     });
+        //
+        // }
     };
 
     this.steerOff = function (s) {
@@ -381,8 +393,9 @@ function Level() {
     this.verbose = false;
     this.startPoints = [];
 
-    this.draw = function (ctx) {
+    this.layer = new Layer();
 
+    this.draw = function (ctx) {
         if (this.img) {
             ctx.drawImage(this.img, 0, 0);
         }
