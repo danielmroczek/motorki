@@ -323,6 +323,7 @@ function Player() {
         //console.log(this.angle);
     };
 
+    //TODO: remove all ctx-canvas stuff
     this.draw = function (ctx) {
 
         body.position = new Point(this.position);
