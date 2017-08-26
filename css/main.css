@@ -101,8 +101,8 @@ body {
 
 canvas {
     display: block;
-    width: 100vmin;
-    height: 70vmin;
+    width: 100vw;
+    height: 70vw;
     margin: 0 auto;
     /*border: 1px solid black;*/
 }

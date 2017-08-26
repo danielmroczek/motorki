@@ -29,8 +29,10 @@ window.addEventListener('load', () => {
 
     function restart(track) {
         if (game) {
-            game.stop();
-            game.dispose();
+            let oldGame = game;
+            oldGame.stop().then(() => {
+                oldGame.dispose();
+            });
         }
         game = new Game();
         game.loadLevel('tracks/' + track + '.svg');
@@ -267,11 +269,18 @@ function Player() {
         }
     ];
 
-    let body = new Path.Rectangle(this.position, [this.width, this.height]);
-    body.strokeColor = this.colors.front;
-    body.fillColor = this.colors.main;
-    body.applyMatrix = false;
+    let svg = $.get({
+        url: 'img/moto.svg',
+        async: false
+    }).responseXML;
 
+    let body = new Group();
+    body.importSVG(svg);
+
+    // let body = new Path.Rectangle(this.position, [this.width, this.height]);
+    // body.strokeColor = this.colors.front;
+    // body.fillColor = this.colors.main;
+    body.applyMatrix = false;
 
     this.updateVertices = function () {
         let points = [];
@@ -335,6 +344,12 @@ function Player() {
 
         body.position = new Point(this.position);
         body.rotation = this.angle;
+        if (this.anglespeed) {
+            body.rotation += (5 * this.anglespeed);
+        }
+
+        let wheel = body.children[0].children["g4141"].children["wheel-front"];
+        wheel.rotation = -10 * this.anglespeed;
         //console.log(body.rotation);
 
         // ctx.save();
