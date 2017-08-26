@@ -30,6 +30,7 @@ window.addEventListener('load', () => {
     function restart(track) {
         if (game) {
             game.stop();
+            game.dispose();
         }
         game = new Game();
         game.loadLevel('tracks/' + track + '.svg');
@@ -74,8 +75,7 @@ function Game() {
 
         level = new Level();
         level.vertices = vertices;
-        level.layer.importSVG(svg);
-        level.updateImage(svgSource);
+        level.updateImage(svg);
 
         $(svg).find('metadata > start').each((i, startPoint) => {
             startPoint = $(startPoint);
@@ -108,13 +108,16 @@ function Game() {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
-        //window.requestAnimationFrame(drawLoop);
         setTimeout(loop, 1000 / FPS);
     };
 
     this.stop = function () {
         let promise = new Promise((res, rej) => {
             that.stopped = res;
+        });
+
+        bodies.forEach(body => {
+            body.dispose();
         });
 
         document.removeEventListener("keydown", onKeydown);
@@ -181,19 +184,6 @@ function Game() {
             body.move(timediff);
             //collideBodies(body);
             level.collide(body);
-
-            // if (body.position.x < 0) {
-            //     body.position.x = canvas.width;
-            // }
-            // if (body.position.x > canvas.width) {
-            //     body.position.x = 0;
-            // }
-            // if (body.position.y < 0) {
-            //     body.position.y = canvas.height;
-            // }
-            // if (body.position.y > canvas.height) {
-            //     body.position.y = 0;
-            // }
         });
 
         if (!that.stopped) {
@@ -219,6 +209,10 @@ function Game() {
     function onResize(event) {
         view.setZoom(view.getViewSize().getWidth() / WIDTH);
         view.setCenter(center);
+    }
+
+    this.dispose = function() {
+        level.dispose();
     }
 }
 function Player() {
@@ -397,12 +391,13 @@ function Player() {
         let collisionAngle = (Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90;
         this.angle = -this.angle + 2 * (collisionAngle);
 
+    };
+
+    this.dispose = function () {
+        body.remove();
     }
-
-
 }
 function Level() {
-    this.svg;
     this.vertices = [];
     this.verbose = false;
     this.startPoints = [];
@@ -450,8 +445,11 @@ function Level() {
     };
 
     this.updateImage = function (svg) {
-        this.img = new Image();
-        this.img.src = svg;
+        this.layer.importSVG(svg);
+    };
+
+    this.dispose = function() {
+        this.layer.remove();
     }
 
 }
