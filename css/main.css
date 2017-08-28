@@ -97,14 +97,14 @@ textarea {
 
 body {
     overflow: hidden;
+    background: #4CAF50;
 }
 
 canvas {
     display: block;
-    width: 100vw;
-    height: 70vw;
+    width: 100vmin;
+    height: 70vmin;
     margin: 0 auto;
-    /*border: 1px solid black;*/
 }
 
 

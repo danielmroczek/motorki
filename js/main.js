@@ -29,10 +29,8 @@ window.addEventListener('load', () => {
 
     function restart(track) {
         if (game) {
-            let oldGame = game;
-            oldGame.stop().then(() => {
-                oldGame.dispose();
-            });
+            project.clear();
+            game.stop();
         }
         game = new Game();
         game.loadLevel('tracks/' + track + '.svg');
@@ -47,6 +45,12 @@ function Game() {
     const WIDTH = 640;
     const canvas = document.getElementById('gc');
     const ctx = canvas.getContext("2d");
+    const playerColors = [
+        'red',
+        'white',
+        'yellow',
+        'blue'
+    ];
     let map = new Rectangle(new Point(0,0), [WIDTH, HEIGHT]);
     let center = map.getCenter();
     let that = this;
@@ -91,7 +95,10 @@ function Game() {
     };
 
     this.start = function () {
-        player = new Player();
+        level.dispose();
+        project.activeLayer.addChild(level.layer);
+
+        player = new Player(playerColors[Math.floor(Math.random() * playerColors.length)]);
         that.stopped = null;
         bodies = [
             player
@@ -104,12 +111,14 @@ function Game() {
         };
         player.angle = startPoint.angle;
 
-        view.setViewSize(canvas.width, canvas.height);
+
         onResize();
+        view.requestUpdate();
 
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
+        starttime = performance.now();
         setTimeout(loop, 1000 / FPS);
     };
 
@@ -121,6 +130,8 @@ function Game() {
         bodies.forEach(body => {
             body.dispose();
         });
+        level.dispose();
+
 
         document.removeEventListener("keydown", onKeydown);
         document.removeEventListener("keyup", onKeyup);
@@ -171,16 +182,9 @@ function Game() {
     }
 
     function loop() {
-        let timestamp = new Date().getTime();
-        if (!starttime) {
-            starttime = timestamp;
-            setTimeout(loop, 1000 / FPS);
-            return;
-        }
+        let timestamp = performance.now();
         let timediff = timestamp - starttime;
-
         starttime = timestamp;
-        // console.log(timediff);
 
         bodies.forEach(body => {
             body.move(timediff);
@@ -196,16 +200,9 @@ function Game() {
     }
 
     function drawLoop() {
-        // ctx.fillStyle = "white";
-        // ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // level.draw(ctx);
-
         bodies.forEach(body => {
             body.draw();
         });
-
-        //window.requestAnimationFrame(drawLoop);
     }
 
     function onResize(event) {
@@ -217,7 +214,8 @@ function Game() {
         level.dispose();
     }
 }
-function Player() {
+
+function Player(color) {
     this.position = {
         x: 400,
         y: 350
@@ -270,17 +268,27 @@ function Player() {
     ];
 
     let svg = $.get({
-        url: 'img/moto.svg',
+        url: `img/moto-${color}.svg`,
         async: false
     }).responseXML;
 
-    let body = new Group();
-    body.importSVG(svg);
+    let body = project.importSVG(svg);
 
     // let body = new Path.Rectangle(this.position, [this.width, this.height]);
     // body.strokeColor = this.colors.front;
     // body.fillColor = this.colors.main;
     body.applyMatrix = false;
+
+    let debugBody;
+    if (this.verbose) {
+        debugBody = new Path.Circle({
+            center: this.position,
+            radius: 5,
+            fillColor: this.colors.debug
+        });
+
+        debugBody.applyMatrix = false;
+    }
 
     this.updateVertices = function () {
         let points = [];
@@ -339,54 +347,19 @@ function Player() {
         //console.log(this.angle);
     };
 
-    //TODO: remove all ctx-canvas stuff
-    this.draw = function (ctx) {
-
+    this.draw = function () {
         body.position = new Point(this.position);
         body.rotation = this.angle;
         if (this.anglespeed) {
-            body.rotation += (5 * this.anglespeed);
+            body.rotation += (this.speed / 2 * this.anglespeed);
         }
 
-        let wheel = body.children[0].children["g4141"].children["wheel-front"];
-        wheel.rotation = -10 * this.anglespeed;
-        //console.log(body.rotation);
+        let wheel = body.children["front-wheel"];
+        wheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
 
-        // ctx.save();
-        //
-        // let points = [];
-        // this.vertices.forEach(v => {
-        //     points.push([v.p1.x, v.p1.y]);
-        // });
-        //
-        // //let body = new Path(points);
-        // //body.strokeColor = 'black';
-        // //body.fillColor = 'white';
-        //
-        // ctx.translate(this.position.x, this.position.y);
-        // ctx.rotate(this.angle * Math.PI / 180);
-        //
-        // ctx.fillStyle = this.colors.main;
-        // ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-        //
-        // ctx.fillStyle = this.colors.front;
-        // ctx.fillRect(-this.width / 2, (-this.height / 2) - 2, this.width, 6);
-        //
-        // ctx.fillStyle = this.colors.back;
-        // ctx.fillRect(-this.width / 2, (this.height / 2) - 2, this.width, 6);
-        //
-        // ctx.restore();
-        //
-        // if (this.verbose) {
-        //     ctx.beginPath();
-        //     this.vertices.forEach((p) => {
-        //         ctx.beginPath();
-        //         ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI, false);
-        //         ctx.fillStyle = this.colors.debug;
-        //         ctx.fill();
-        //     });
-        //
-        // }
+        if (debugBody) {
+            debugBody.position = new Point(this.position);
+        }
     };
 
     this.steerOff = function (s) {
@@ -417,7 +390,7 @@ function Level() {
     this.verbose = false;
     this.startPoints = [];
 
-    this.layer = new Layer();
+    this.layer;
 
     this.draw = function (ctx) {
         if (this.img) {
@@ -460,11 +433,13 @@ function Level() {
     };
 
     this.updateImage = function (svg) {
-        this.layer.importSVG(svg);
+        this.layer = project.importSVG(svg);
     };
 
     this.dispose = function() {
-        this.layer.remove();
+        if (this.layer) {
+            this.layer.remove();
+        }
     }
 
 }
