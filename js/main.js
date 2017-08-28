@@ -88,8 +88,8 @@ function Game() {
             level.startPoints.push({
                 x: parseInt(startPoint.attr('x')),
                 y: parseInt(startPoint.attr('y')),
-                angle: startPoint.attr('a'),
-                speed: startPoint.attr('s') // unused for now
+                angle: parseInt(startPoint.attr('a')),
+                speed: parseInt(startPoint.attr('s')) // unused for now
             });
         });
     };
@@ -346,10 +346,7 @@ function Player(color) {
 
     this.draw = function () {
         body.position = new Point(this.position);
-        body.rotation = this.angle;
-        if (this.anglespeed) {
-            body.rotation += (this.speed / 2 * this.anglespeed);
-        }
+        body.rotation = this.angle + this.speed * this.anglespeed;
 
         let wheel = body.children["front-wheel"];
         wheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
