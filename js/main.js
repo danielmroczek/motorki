@@ -274,9 +274,6 @@ function Player(color) {
 
     let body = project.importSVG(svg);
 
-    // let body = new Path.Rectangle(this.position, [this.width, this.height]);
-    // body.strokeColor = this.colors.front;
-    // body.fillColor = this.colors.main;
     body.applyMatrix = false;
 
     let debugBody;
@@ -538,7 +535,6 @@ let Util = {
         };
 
         let segInfo = getSegmentData(path);
-        console.dir(segInfo);
 
         let getDist = function (p1, p2) {
             return Math.sqrt(
