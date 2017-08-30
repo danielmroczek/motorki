@@ -45,7 +45,6 @@ function Game() {
     const HEIGHT = 448;
     const WIDTH = 640;
     const canvas = document.getElementById('gc');
-    const ctx = canvas.getContext("2d");
     const playerColors = [
         'red',
         'white',
@@ -62,18 +61,23 @@ function Game() {
     let bodies = [];
     let starttime;
 
+    // Paper.js things
+    paper.setup(canvas);
+    view.onFrame = drawLoop;
+    view.onResize = onResize;
+    view.draw();
+
     let layers = {
         level: new Layer(),
         lastSkidMarks: new Layer(),
         skidmarks: new Layer(),
         players: new Layer()
     };
-    // Paper.js things
-    paper.setup(canvas);
-    view.onFrame = drawLoop;
-    view.onResize = onResize;
-    view.draw();
-    project.addLayer = levelLayer;
+
+    Object.keys(layers).forEach(layerName => {
+        let layer = layers[layerName];
+        project.addLayer(layer);
+    });
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -103,10 +107,18 @@ function Game() {
     };
 
     this.start = function () {
-        level.dispose();
-        project.activeLayer.addChild(level.layer);
+        if (layers.lastSkidMarks) {
+            layers.lastSkidMarks.remove();
+        }
+        layers.lastSkidMarks = layers.skidmarks;
+        layers.lastSkidMarks.opacity = 0.5;
+        layers.skidmarks = new Layer();
+        project.insertLayer(layers.players.index, layers.skidmarks);
 
-        player = new Player(playerColors[Math.floor(Math.random() * playerColors.length)]);
+        level.dispose();
+        layers.level.addChild(level.img);
+
+        player = new Player(playerColors[Math.floor(Math.random() * playerColors.length)], layers);
         that.stopped = null;
         bodies = [
             player
@@ -223,7 +235,7 @@ function Game() {
     }
 }
 
-function Player(color) {
+function Player(color, layers) {
     const skidmarkMaxSegmentLength = 15;
     const skidmatkMaxSegments = 100;
     this.position = {
@@ -284,14 +296,20 @@ function Player(color) {
         strokeJoin: 'round',
         dashArray: [0.1,4]
     });
-    this.skidmarkRasters = [];
+
+    this.skidmarkRasterGroup = new Group();
+    this.skidmarkRasterGroup.addChild(this.skidmark);
+    layers.skidmarks.addChild(this.skidmarkRasterGroup);
 
     let svg = $.get({
         url: `img/moto-${color}.svg`,
         async: false
     }).responseXML;
 
-    let body = project.importSVG(svg);
+    let body = project.importSVG(svg, {
+        insert: false
+    });
+    layers.players.addChild(body);
 
     body.applyMatrix = false;
 
@@ -380,9 +398,21 @@ function Player(color) {
         this.skidmark.add(newPoint);
         count += 1;
 
-        if (count > 100) {
+        if (count > 60) {
             count = 0;
-            this.skidmark.flatten();
+            //this.skidmark.flatten();
+
+            this.skidmark.simplify();
+            let raster = this.skidmarkRasterGroup.rasterize();
+            this.skidmarkRasterGroup.remove();
+            this.skidmarkRasterGroup = new Group();
+            this.skidmarkRasterGroup.addChild(raster);
+            let lastSegment = this.skidmark.lastSegment;
+            this.skidmark.removeSegments();
+            this.skidmark.add(lastSegment);
+            this.skidmarkRasterGroup.addChild(this.skidmark);
+            layers.skidmarks.addChild(this.skidmarkRasterGroup);
+            //console.dir(project.layers);
         }
         // if (this.lastPosition &&
         //     this.lastPosition.x != this.position.x &&
@@ -442,7 +472,7 @@ function Level() {
     this.verbose = false;
     this.startPoints = [];
 
-    this.layer;
+    this.img;
 
     this.draw = function (ctx) {
         if (this.img) {
@@ -485,12 +515,14 @@ function Level() {
     };
 
     this.updateImage = function (svg) {
-        this.layer = project.importSVG(svg);
+        this.img = project.importSVG(svg, {
+            insert: false
+        });
     };
 
     this.dispose = function() {
-        if (this.layer) {
-            this.layer.remove();
+        if (this.img) {
+            this.img.remove();
         }
     }
 
