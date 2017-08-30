@@ -216,7 +216,7 @@ function Game() {
 }
 
 function Player(color) {
-    const skidmarkMaxSegmentLength = 10;
+    const skidmarkMaxSegmentLength = 15;
     const skidmatkMaxSegments = 100;
     this.position = {
         x: 400,
@@ -372,9 +372,8 @@ function Player(color) {
             this.lastPosition.y != this.position.y) {
 
             let newPoint = backWheel.localToGlobal(backWheel.position);
-            if (this.skidmark.lastSegment &&
-                this.skidmark.lastSegment.curve &&
-                this.skidmark.lastSegment.curve.length < skidmarkMaxSegmentLength) {
+            if (this.skidmark.lastCurve &&
+                this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
 
                 this.skidmark.lastSegment.point = newPoint;
             } else {
