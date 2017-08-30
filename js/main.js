@@ -1,5 +1,6 @@
 window.addEventListener('load', () => {
     paper.install(window);
+    paper.settings.insertItems = false;
 
     let game;
 
@@ -61,11 +62,18 @@ function Game() {
     let bodies = [];
     let starttime;
 
+    let layers = {
+        level: new Layer(),
+        lastSkidMarks: new Layer(),
+        skidmarks: new Layer(),
+        players: new Layer()
+    };
     // Paper.js things
     paper.setup(canvas);
     view.onFrame = drawLoop;
     view.onResize = onResize;
     view.draw();
+    project.addLayer = levelLayer;
 
     this.loadLevel = function (svgSource) {
         let svg = $.get({
@@ -355,6 +363,7 @@ function Player(color) {
         //console.log(this.angle);
     };
 
+    let count = 0;
     this.draw = function () {
         body.position = new Point(this.position);
         body.rotation = this.angle + this.speed * this.anglespeed;
@@ -367,28 +376,40 @@ function Player(color) {
             debugBody.position = new Point(this.position);
         }
 
-        if (this.lastPosition &&
-            this.lastPosition.x != this.position.x &&
-            this.lastPosition.y != this.position.y) {
+        let newPoint = backWheel.localToGlobal(backWheel.position);
+        this.skidmark.add(newPoint);
+        count += 1;
 
-            let newPoint = backWheel.localToGlobal(backWheel.position);
-            if (this.skidmark.lastCurve &&
-                this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
-
-                this.skidmark.lastSegment.point = newPoint;
-            } else {
-                this.skidmark.add(newPoint);
-
-                if (this.skidmark.segments.length > skidmatkMaxSegments) {
-                    this.skidmark.removeSegment(0);
-                    // this.skidmarkRasters.push(this.skidmark.rasterize());
-                }
-
-                console.log(this.skidmark.segments.length);
-            }
-
-            this.skidmark.smooth('continuous');
+        if (count > 100) {
+            count = 0;
+            this.skidmark.flatten();
         }
+        // if (this.lastPosition &&
+        //     this.lastPosition.x != this.position.x &&
+        //     this.lastPosition.y != this.position.y) {
+        //
+        //
+        //     /*if (this.skidmark.lastCurve &&
+        //         this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
+        //
+        //         this.skidmark.lastSegment.point = newPoint;
+        //     } else*/ {
+        //         this.skidmark.add(newPoint);
+        //
+        //         // this.skidmark.simplify(0.0001);
+        //         if (this.skidmark.segments.length > skidmatkMaxSegments) {
+        //             this.skidmark.removeSegment(0);
+        //             // this.skidmarkRasters.push(this.skidmark.rasterize());
+        //         }
+        //
+        //         console.log(this.skidmark.segments.length);
+        //
+        //         //this.skidmark.smooth('continuous');
+        //
+        //     }
+        //
+        //
+        // }
 
 
     };
