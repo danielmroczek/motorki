@@ -216,6 +216,8 @@ function Game() {
 }
 
 function Player(color) {
+    const skidmarkMaxSegmentLength = 10;
+    const skidmatkMaxSegments = 100;
     this.position = {
         x: 400,
         y: 350
@@ -266,6 +268,15 @@ function Player(color) {
             y: this.height / 2
         }
     ];
+
+    this.skidmark = new Path({
+        strokeColor: new Color(0, 0, 0, 0.5),
+        strokeWidth: 4,
+        strokeCap: 'round',
+        strokeJoin: 'round',
+        dashArray: [0.1,4]
+    });
+    this.skidmarkRasters = [];
 
     let svg = $.get({
         url: `img/moto-${color}.svg`,
@@ -348,12 +359,39 @@ function Player(color) {
         body.position = new Point(this.position);
         body.rotation = this.angle + this.speed * this.anglespeed;
 
-        let wheel = body.children["front-wheel"];
-        wheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
+        let frontWheel = body.children["front-wheel"];
+        let backWheel = body.children["back-wheel"];
+        frontWheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
 
         if (debugBody) {
             debugBody.position = new Point(this.position);
         }
+
+        if (this.lastPosition &&
+            this.lastPosition.x != this.position.x &&
+            this.lastPosition.y != this.position.y) {
+
+            let newPoint = backWheel.localToGlobal(backWheel.position);
+            if (this.skidmark.lastSegment &&
+                this.skidmark.lastSegment.curve &&
+                this.skidmark.lastSegment.curve.length < skidmarkMaxSegmentLength) {
+
+                this.skidmark.lastSegment.point = newPoint;
+            } else {
+                this.skidmark.add(newPoint);
+
+                if (this.skidmark.segments.length > skidmatkMaxSegments) {
+                    this.skidmark.removeSegment(0);
+                    // this.skidmarkRasters.push(this.skidmark.rasterize());
+                }
+
+                console.log(this.skidmark.segments.length);
+            }
+
+            this.skidmark.smooth('continuous');
+        }
+
+
     };
 
     this.steerOff = function (s) {
