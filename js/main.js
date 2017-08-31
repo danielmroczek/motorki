@@ -30,7 +30,8 @@ window.addEventListener('load', () => {
 
     function restart(track) {
         if (game) {
-            project.clear();
+            //project.clear();
+            view.remove();
             game.stop();
         }
         game = new Game();
@@ -60,6 +61,7 @@ function Game() {
     let level;
     let bodies = [];
     let starttime;
+    let loopId;
 
     // Paper.js things
     paper.setup(canvas);
@@ -109,7 +111,6 @@ function Game() {
     };
 
     this.start = function () {
-
         layers.lastSkidMarks.removeChildren();
         layers.lastSkidMarks.addChild(layers.skidmarks.rasterize());
         layers.skidmarks.removeChildren();
@@ -130,15 +131,13 @@ function Game() {
         };
         player.angle = startPoint.angle;
 
-
         onResize();
-        //view.requestUpdate();
 
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
         starttime = performance.now();
-        setTimeout(loop, 1000 / FPS);
+        loopId = setInterval(loop, 1000 / FPS);
     };
 
     this.stop = function () {
@@ -150,7 +149,6 @@ function Game() {
             body.dispose();
         });
         level.dispose();
-
 
         document.removeEventListener("keydown", onKeydown);
         document.removeEventListener("keyup", onKeyup);
@@ -211,16 +209,15 @@ function Game() {
             level.collide(body);
         });
 
-        if (!that.stopped) {
-            setTimeout(loop, 1000 / FPS);
-        } else {
+        if (that.stopped) {
+            clearInterval(loopId);
             that.stopped();
         }
     }
 
-    function drawLoop() {
+    function drawLoop(e) {
         bodies.forEach(body => {
-            body.draw();
+            body.draw(e);
         });
     }
 
@@ -291,7 +288,7 @@ function Player(color, layers) {
     this.skidmark = new Path({
         strokeColor: new Color(0, 0, 0, 0.75),
         strokeWidth: 4,
-        // strokeCap: 'round',
+        strokeCap: 'butt',
         strokeJoin: 'round',
         dashArray: [1.5, 1.5]
     });
@@ -380,7 +377,7 @@ function Player(color, layers) {
         //console.log(this.angle);
     };
 
-    this.draw = function () {
+    this.draw = function (e) {
         body.position = new Point(this.position);
         body.rotation = this.angle + this.speed * this.anglespeed;
 
