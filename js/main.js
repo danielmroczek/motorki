@@ -69,7 +69,9 @@ function Game() {
 
     let layers = {
         level: new Layer(),
-        lastSkidMarks: new Layer(),
+        lastSkidMarks: new Layer({
+            opacity: 0.5
+        }),
         skidmarks: new Layer(),
         players: new Layer()
     };
@@ -107,15 +109,12 @@ function Game() {
     };
 
     this.start = function () {
-        if (layers.lastSkidMarks) {
-            layers.lastSkidMarks.remove();
-        }
-        layers.lastSkidMarks = layers.skidmarks;
-        layers.lastSkidMarks.opacity = 0.5;
-        layers.skidmarks = new Layer();
-        project.insertLayer(layers.players.index, layers.skidmarks);
 
-        level.dispose();
+        layers.lastSkidMarks.removeChildren();
+        layers.lastSkidMarks.addChild(layers.skidmarks.rasterize());
+        layers.skidmarks.removeChildren();
+
+        layers.level.removeChildren();
         layers.level.addChild(level.img);
 
         player = new Player(playerColors[Math.floor(Math.random() * playerColors.length)], layers);
@@ -133,7 +132,7 @@ function Game() {
 
 
         onResize();
-        view.requestUpdate();
+        //view.requestUpdate();
 
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
@@ -236,8 +235,8 @@ function Game() {
 }
 
 function Player(color, layers) {
-    const skidmarkMaxSegmentLength = 15;
-    const skidmatkMaxSegments = 100;
+    const skidmarkMaxSegmentLength = 5;
+    const skidmarkMaxPathLength = 100;
     this.position = {
         x: 400,
         y: 350
@@ -290,11 +289,11 @@ function Player(color, layers) {
     ];
 
     this.skidmark = new Path({
-        strokeColor: new Color(0, 0, 0, 0.5),
+        strokeColor: new Color(0, 0, 0, 0.75),
         strokeWidth: 4,
-        strokeCap: 'round',
+        // strokeCap: 'round',
         strokeJoin: 'round',
-        dashArray: [0.1,4]
+        dashArray: [1.5, 1.5]
     });
 
     this.skidmarkRasterGroup = new Group();
@@ -381,7 +380,6 @@ function Player(color, layers) {
         //console.log(this.angle);
     };
 
-    let count = 0;
     this.draw = function () {
         body.position = new Point(this.position);
         body.rotation = this.angle + this.speed * this.anglespeed;
@@ -394,53 +392,38 @@ function Player(color, layers) {
             debugBody.position = new Point(this.position);
         }
 
+        if (!this.lastPosition ||
+            (this.lastPosition.x == this.position.x &&
+                 this.lastPosition.y == this.position.y)) {
+            return;
+        }
+
         let newPoint = backWheel.localToGlobal(backWheel.position);
-        this.skidmark.add(newPoint);
-        count += 1;
+        if (this.skidmark.lastCurve &&
+            this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
+            this.skidmark.lastSegment.point = newPoint;
 
-        if (count > 60) {
-            count = 0;
-            //this.skidmark.flatten();
+        } else {
+            this.skidmark.add(newPoint);
+        }
 
-            this.skidmark.simplify();
+        if (this.skidmark.length > skidmarkMaxPathLength) {
+            console.log(this.skidmark.segments.length);
+
+            //this.skidmark.simplify();
             let raster = this.skidmarkRasterGroup.rasterize();
             this.skidmarkRasterGroup.remove();
             this.skidmarkRasterGroup = new Group();
             this.skidmarkRasterGroup.addChild(raster);
             let lastSegment = this.skidmark.lastSegment;
+            let length = this.skidmark.length;
             this.skidmark.removeSegments();
             this.skidmark.add(lastSegment);
+            this.skidmark.dashOffset = (length + this.skidmark.dashOffset) % 3;
             this.skidmarkRasterGroup.addChild(this.skidmark);
             layers.skidmarks.addChild(this.skidmarkRasterGroup);
             //console.dir(project.layers);
         }
-        // if (this.lastPosition &&
-        //     this.lastPosition.x != this.position.x &&
-        //     this.lastPosition.y != this.position.y) {
-        //
-        //
-        //     /*if (this.skidmark.lastCurve &&
-        //         this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
-        //
-        //         this.skidmark.lastSegment.point = newPoint;
-        //     } else*/ {
-        //         this.skidmark.add(newPoint);
-        //
-        //         // this.skidmark.simplify(0.0001);
-        //         if (this.skidmark.segments.length > skidmatkMaxSegments) {
-        //             this.skidmark.removeSegment(0);
-        //             // this.skidmarkRasters.push(this.skidmark.rasterize());
-        //         }
-        //
-        //         console.log(this.skidmark.segments.length);
-        //
-        //         //this.skidmark.smooth('continuous');
-        //
-        //     }
-        //
-        //
-        // }
-
 
     };
 
