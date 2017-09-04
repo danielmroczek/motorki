@@ -35,7 +35,8 @@ window.addEventListener('load', () => {
             game.stop();
         }
         game = new Game();
-        game.loadLevel('tracks/' + track + '.svg');
+        let background = game.loadLevel('tracks/' + track + '.svg');
+        document.body.style.background = background;
         game.start();
     }
 });
@@ -108,6 +109,10 @@ function Game() {
                 speed: parseInt(startPoint.attr('s')) // unused for now
             });
         });
+
+        let background = svg.querySelector('.background').style.fill;
+
+        return background;
     };
 
     this.start = function () {

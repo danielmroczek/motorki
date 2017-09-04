@@ -102,7 +102,8 @@
         inkscape:connector-curvature="0"
         id="path8"
         d="m 0.499053,223.5009 0,-223.99995 319.999997,0 320,0 0,223.99995 0,224.00005 -320,0 -319.999997,0 z"
-        sodipodi:nodetypes="ccccccccc"/>
+        sodipodi:nodetypes="ccccccccc"
+        class="background"/>
     <path
         style="fill:url(#radialGradient4149);fill-opacity:1;stroke:#ff3d00;stroke-width:4.99999905;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
         inkscape:connector-curvature="0"
