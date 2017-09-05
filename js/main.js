@@ -46,6 +46,7 @@ function Game() {
     const FPS = 60;
     const HEIGHT = 448;
     const WIDTH = 640;
+    const TICK = 1000 / FPS;
     const canvas = document.getElementById('gc');
     const playerColors = [
         'red',
@@ -61,8 +62,9 @@ function Game() {
     let player;
     let level;
     let bodies = [];
-    let starttime;
+    let lastFrameTime;
     let loopId;
+    let delta = 0;
 
     // Paper.js things
     paper.setup(canvas);
@@ -141,8 +143,8 @@ function Game() {
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
 
-        starttime = performance.now();
-        loopId = setInterval(loop, 1000 / FPS);
+        lastFrameTime = performance.now();
+        loopId = setInterval(loop, TICK);
     };
 
     this.stop = function () {
@@ -205,19 +207,26 @@ function Game() {
 
     function loop() {
         let timestamp = performance.now();
-        let timediff = timestamp - starttime;
-        starttime = timestamp;
+        delta += timestamp - lastFrameTime;
+        lastFrameTime = timestamp;
 
-        bodies.forEach(body => {
-            body.move(timediff);
-            //collideBodies(body);
-            level.collide(body);
-        });
+        while (delta >= TICK) {
+            tick(TICK);
+            delta -= TICK;
+        }
 
         if (that.stopped) {
             clearInterval(loopId);
             that.stopped();
         }
+    }
+
+    function tick(timediff) {
+        bodies.forEach(body => {
+            body.move(timediff);
+            //collideBodies(body);
+            level.collide(body);
+        });
     }
 
     function drawLoop(e) {
@@ -403,15 +412,13 @@ function Player(color, layers) {
         let newPoint = backWheel.localToGlobal(backWheel.position);
         if (this.skidmark.lastCurve &&
             this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
-            this.skidmark.lastSegment.point = newPoint;
 
+            this.skidmark.lastSegment.point = newPoint;
         } else {
             this.skidmark.add(newPoint);
         }
 
         if (this.skidmark.length > skidmarkMaxPathLength) {
-            console.log(this.skidmark.segments.length);
-
             //this.skidmark.simplify();
             let raster = this.skidmarkRasterGroup.rasterize();
             this.skidmarkRasterGroup.remove();
@@ -424,7 +431,6 @@ function Player(color, layers) {
             this.skidmark.dashOffset = (length + this.skidmark.dashOffset) % 3;
             this.skidmarkRasterGroup.addChild(this.skidmark);
             layers.skidmarks.addChild(this.skidmarkRasterGroup);
-            //console.dir(project.layers);
         }
 
     };
