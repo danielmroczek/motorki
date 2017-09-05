@@ -343,7 +343,8 @@ function Player(color, layers) {
         points.push(points[0]);
         let newVertices = Util.pointsToVertices(points);
 
-        this.vertices = newVertices;
+        // using vertices in correct order - front, right, left, back
+        this.vertices = [newVertices[0], newVertices[1], newVertices[3], newVertices[2]];
     };
 
     this.move = function (timediff) {
