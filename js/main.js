@@ -46,7 +46,7 @@ function Game() {
     const FPS = 60;
     const HEIGHT = 448;
     const WIDTH = 640;
-    const TICK = 1000 / FPS;
+    const timestep = 1000 / FPS;
     const canvas = document.getElementById('gc');
     const playerColors = [
         'red',
@@ -86,6 +86,7 @@ function Game() {
         project.addLayer(layer);
     });
 
+    //todo: move to level
     this.loadLevel = function (svgSource) {
         let svg = $.get({
             url: svgSource,
@@ -102,6 +103,7 @@ function Game() {
         level.vertices = vertices;
         level.updateImage(svg);
 
+        // start points for each player
         $(svg).find('metadata > start').each((i, startPoint) => {
             startPoint = $(startPoint);
             level.startPoints.push({
@@ -111,6 +113,14 @@ function Game() {
                 speed: parseInt(startPoint.attr('s')) // unused for now
             });
         });
+
+        // start line for time measuring
+        let startLinePath = $(svg).find('path.startline')[0];
+        if (startLinePath) {
+            let start = startLinePath.getPointAtLength(0);
+            let end = startLinePath.getPointAtLength(startLinePath.getTotalLength());
+            level.startLine = new Vertex(start, end);
+        }
 
         let background = svg.querySelector('.background').style.fill;
 
@@ -125,13 +135,13 @@ function Game() {
         layers.level.removeChildren();
         layers.level.addChild(level.img);
 
-        player = new Player(playerColors[Math.floor(Math.random() * playerColors.length)], layers);
+        player = new Player(Util.random(playerColors), layers);
         that.stopped = null;
         bodies = [
             player
         ];
 
-        let startPoint = level.startPoints[Math.floor(Math.random() * level.startPoints.length)];
+        let startPoint = Util.random(level.startPoints);
         player.position = {
             x: startPoint.x,
             y: startPoint.y,
@@ -144,7 +154,7 @@ function Game() {
         document.addEventListener("keyup", onKeyup);
 
         lastFrameTime = performance.now();
-        loopId = setInterval(loop, TICK);
+        loopId = setInterval(loop, timestep);
     };
 
     this.stop = function () {
@@ -210,9 +220,9 @@ function Game() {
         delta += timestamp - lastFrameTime;
         lastFrameTime = timestamp;
 
-        while (delta >= TICK) {
-            tick(TICK);
-            delta -= TICK;
+        while (delta >= timestep) {
+            tick(timestep);
+            delta -= timestep;
         }
 
         if (that.stopped) {
@@ -226,6 +236,7 @@ function Game() {
             body.move(timediff);
             //collideBodies(body);
             level.collide(body);
+            body.checkLap(level.startLine);
         });
     }
 
@@ -268,6 +279,7 @@ function Player(color, layers) {
 
     this.verbose = false;
     this.vertices = [];
+    this.cheat = false;
 
     this.colors = {
         main: "#F44336",
@@ -281,7 +293,10 @@ function Player(color, layers) {
         "right": 0
     };
 
+    // if player has moved already
     this.started = false;
+    // if player has crossed start line for the first time
+    this.startedLap = false;
 
     let defaultVertices = [
         {
@@ -324,6 +339,7 @@ function Player(color, layers) {
     body.applyMatrix = false;
 
     let debugBody;
+
     if (this.verbose) {
         debugBody = new Path.Circle({
             center: this.position,
@@ -389,9 +405,12 @@ function Player(color, layers) {
             //console.log(this.speed);
             this.updateVertices();
         }
+
+        if (this.startedLap) {
+            this.lapTime += timediff;
+        }
         //console.log(this.angle);
     };
-
     this.draw = function (e) {
         body.position = new Point(this.position);
         body.rotation = this.angle + this.speed * this.anglespeed;
@@ -435,6 +454,38 @@ function Player(color, layers) {
         }
 
     };
+    this.checkLap = function (startLine) {
+        if (!startLine || !this.lastPosition) {
+            return;
+        }
+        let moveVertex = new Vertex(this.position, this.lastPosition);
+        if (moveVertex.collide(startLine)) {
+            let side = Util.findSide(startLine, this.position);
+            if (side > 0) {
+                // ==>
+                if (!this.cheat) {
+                    this.finishAndStartLap();
+                }
+
+                this.cheat = false;
+            } else if (side < 0) {
+                // <==
+                this.cheat = true;
+            }
+        }
+    };
+
+    this.finishAndStartLap = function () {
+        let currentTime = this.lapTime;
+        this.lapTime = 0;
+
+        if (!this.startedLap) {
+            this.startedLap = true;
+            return;
+        }
+
+        console.log((currentTime / 1000).toFixed(2));
+    };
 
     this.steerOff = function (s) {
         this.controls[s] = 0;
@@ -463,6 +514,7 @@ function Level() {
     this.vertices = [];
     this.verbose = false;
     this.startPoints = [];
+    this.startLine = null;
 
     this.img;
 
@@ -668,6 +720,13 @@ let Util = {
             vertices.push(v);
         }
         return vertices;
+    },
+    random: function (arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    },
+    findSide: function (vertex, point) {
+        let d = (point.x - vertex.p1.x) * (vertex.p2.y - vertex.p1.y) - (point.y - vertex.p1.y) * (vertex.p2.x - vertex.p1.x);
+        return Math.sign(d);
     }
 
 };
