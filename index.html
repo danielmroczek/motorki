@@ -8,6 +8,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
+        <link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono" rel="stylesheet">
         <!-- Place favicon.ico in the root directory -->
 
         <link rel="stylesheet" href="css/normalize.css">
@@ -18,6 +19,22 @@
     <div id="canvasContainer">
         <canvas id="gc" height="448" width="640" resize></canvas>
     </div>
+
+    <div id="results">
+        <p>
+            <span>current: </span>
+            <span class="current">N/A</span>
+        </p>
+        <p>
+            <span>&nbsp;&nbsp;&nbsp;best: </span>
+            <span class="best">N/A</span>
+        </p>
+        <p>
+            <span>&nbsp;&nbsp;&nbsp;last: </span>
+            <span class="last">N/A</span>
+        </p>
+    </div>
+
     <select id="trackList"/>
 
         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>

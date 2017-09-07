@@ -107,7 +107,22 @@ canvas {
     margin: 0 auto;
 }
 
+#results {
+    font-family: 'Roboto Mono', monospace;
+    color: #fff;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.5);
+    position: absolute;
+    padding: .5em;
 
+    top: 1em;
+    right: 1em;
+    border-radius: .5em;
+}
+
+#results p {
+    margin: 0;
+}
 
 
 

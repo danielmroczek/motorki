@@ -66,6 +66,15 @@ function Game() {
     let loopId;
     let delta = 0;
 
+    let results = {
+        current: $('#results .current'),
+        last: $('#results .last'),
+        best: $('#results .best')
+    };
+    Object.keys(results).forEach(result => {
+       results[result].text("N/A");
+    });
+
     // Paper.js things
     paper.setup(canvas);
     view.onFrame = drawLoop;
@@ -128,6 +137,9 @@ function Game() {
     };
 
     this.start = function () {
+        that.stopped = null;
+
+        // setup layers
         layers.lastSkidMarks.removeChildren();
         layers.lastSkidMarks.addChild(layers.skidmarks.rasterize());
         layers.skidmarks.removeChildren();
@@ -135,8 +147,15 @@ function Game() {
         layers.level.removeChildren();
         layers.level.addChild(level.img);
 
+        // setup players
         player = new Player(Util.random(playerColors), layers);
-        that.stopped = null;
+        player.addEventListener('lap', data => {
+            that.playerLap(data);
+        });
+        player.addEventListener('lapstarted', data => {
+            that.playerLapStarted(data);
+        });
+
         bodies = [
             player
         ];
@@ -148,6 +167,8 @@ function Game() {
         };
         player.angle = startPoint.angle;
 
+
+        // other stuff
         onResize();
 
         document.addEventListener("keydown", onKeydown);
@@ -244,6 +265,10 @@ function Game() {
         bodies.forEach(body => {
             body.draw(e);
         });
+
+        if (player.startedLap) {
+            results.current.text((player.lapTime / 1000).toFixed(2));
+        }
     }
 
     function onResize(event) {
@@ -253,12 +278,27 @@ function Game() {
 
     this.dispose = function() {
         level.dispose();
-    }
+    };
+
+    let best = Number.MAX_VALUE;
+    this.playerLap = function (data) {
+        results.last.text((data.time / 1000).toFixed(2));
+        if (data.time < best) {
+            best = data.time;
+            results.best.text((data.time / 1000).toFixed(2));
+        }
+        //console.log(`${data.player.color} player has ended lap in ${(data.time / 1000).toFixed(2)}`);
+    };
+
+    this.playerLapStarted = function (data) {
+        // Nothing to do as for now
+    };
 }
 
 function Player(color, layers) {
     const skidmarkMaxSegmentLength = 5;
     const skidmarkMaxPathLength = 100;
+    const listeners = {};
     this.position = {
         x: 400,
         y: 350
@@ -281,6 +321,7 @@ function Player(color, layers) {
     this.vertices = [];
     this.cheat = false;
 
+    this.color = color;
     this.colors = {
         main: "#F44336",
         front: "#4CAF50",
@@ -481,10 +522,14 @@ function Player(color, layers) {
 
         if (!this.startedLap) {
             this.startedLap = true;
+            this.emit('lapstarted', this);
             return;
         }
 
-        console.log((currentTime / 1000).toFixed(2));
+        this.emit('lap', {
+          player: this,
+          time: currentTime
+        });
     };
 
     this.steerOff = function (s) {
@@ -508,6 +553,31 @@ function Player(color, layers) {
 
     this.dispose = function () {
         body.remove();
+    };
+
+    this.addEventListener = function(event, callback) {
+        if (!event || typeof callback !== "function" ) {
+            return;
+        }
+
+        let eventListeners = listeners[event];
+        if (!eventListeners) {
+            eventListeners = [];
+            listeners[event] = eventListeners;
+        }
+
+
+        eventListeners.push(callback);
+    };
+    this.emit = function(event, data) {
+        let eventListeners = listeners[event];
+        if (!eventListeners) {
+            return;
+        }
+
+        eventListeners.forEach(listener => {
+            listener.call(this, data);
+        });
     }
 }
 function Level() {
