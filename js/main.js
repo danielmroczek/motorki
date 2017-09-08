@@ -173,6 +173,9 @@ function Game() {
 
         document.addEventListener("keydown", onKeydown);
         document.addEventListener("keyup", onKeyup);
+        ['touchstart', 'touchend', 'touchmove', 'touchcancel'].forEach(event => {
+           window.addEventListener(event, touchControl);
+        });
 
         lastFrameTime = performance.now();
         loopId = setInterval(loop, timestep);
@@ -190,6 +193,9 @@ function Game() {
 
         document.removeEventListener("keydown", onKeydown);
         document.removeEventListener("keyup", onKeyup);
+        ['touchstart', 'touchend', 'touchmove', 'touchcancel'].forEach(event => {
+            window.removeEventListener(event, touchControl);
+        });
         return promise;
     };
 
@@ -234,6 +240,35 @@ function Game() {
                 player.steerOff("right");
                 break;
         }
+    }
+
+    function touchControl(e) {
+        let touches = Array.prototype.slice.call(e.touches);
+        let controls = {
+            left: 0,
+            right: 0
+        };
+        let middle = window.innerWidth / 2;
+        touches.forEach(touch => {
+            if (touch.clientX < middle) {
+                controls.left += 1;
+            } else {
+                controls.right += 1;
+            }
+        });
+
+        player.steerOff();
+        if (controls.left === controls.right) {
+            return;
+        }
+
+        if (controls.left > controls.right) {
+            player.steerOn('left');
+        } else {
+            player.steerOn('right');
+        }
+
+        player.started = true;
     }
 
     function loop() {
@@ -533,7 +568,15 @@ function Player(color, layers) {
     };
 
     this.steerOff = function (s) {
-        this.controls[s] = 0;
+        if (!s) {
+            // turn all off
+            Object.keys(this.controls).forEach(control => {
+               this.controls[control] = 0;
+            });
+        } else {
+            this.controls[s] = 0;
+        }
+
     };
 
     this.steerOn = function (s) {
