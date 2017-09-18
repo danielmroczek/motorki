@@ -82,8 +82,8 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1366"
-     inkscape:window-height="745"
+     inkscape:window-width="1431"
+     inkscape:window-height="721"
      id="namedview12"
      showgrid="false"
      fit-margin-top="0"
@@ -91,14 +91,14 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="0.72750002"
-     inkscape:cx="333.86754"
-     inkscape:cy="291.27012"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:cx="301.02115"
+     inkscape:cy="360.50342"
+     inkscape:window-x="1683"
+     inkscape:window-y="234"
+     inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <path
-     style="fill:#004d40;stroke:none;fill-opacity:1"
+     style="fill:#004d40;fill-opacity:1;stroke:none"
      inkscape:connector-curvature="0"
      id="path5"
      d="m 0,0 c 213.33333,0 426.66667,0 640,0 0,149.33333 0,298.66667 0,448 L 320,448 0,448 C 0,298.66667 0,149.33333 0,0 Z"
@@ -108,7 +108,7 @@
      style="fill:url(#radialGradient4161);fill-opacity:1;stroke:#ffd600;stroke-width:5;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path10"
-     d="m 103,407.99717 c -124.698228,0 -123.843877,-374.988923 -0.21478,-374.988923 L 108.8,20 l 436.4,0 7.3,13 c 106.98401,0 111.5089,375.2 -1.5,375.2 l -5.8,15.8 -436.4,0 z"
+     d="m 103,407.99717 c -111.0906752,0 -153.512349,-333.912963 -0.21478,-374.988923 L 108.8,20 l 436.4,0 7.3,13 C 670.4404,64.602036 659.53126,379.11914 551,408.2 l -5.8,15.8 -436.4,0 z"
      sodipodi:nodetypes="ccccccccc"
      class="track" />
   <path
@@ -121,7 +121,7 @@
      style="fill:#004d40;fill-opacity:1;stroke:#dd2c00;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
      inkscape:connector-curvature="0"
      id="path7"
-     d="m 160,164 c 50.17859,0 320,0 320,0 57.16237,0 55.02297,125 0,125 -55.02297,0 -266.89772,-0.1 -320,-0.1 -53.10228,0 -50.17859,-124.9 0,-124.9 z"
+     d="m 155,164 325,0 c 49.26392,13.20023 48.27526,112.23992 0.654,125 L 155,289 c -45.06753,-11.08762 -53.9324,-108.49845 0,-125 z"
      class="track"
-     sodipodi:nodetypes="zzzzz" />
+     sodipodi:nodetypes="ccccc" />
 </svg>
