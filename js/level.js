@@ -1,12 +1,12 @@
-export default function Level() {
-    this.vertices = [];
-    this.verbose = false;
-    this.startPoints = [];
-    this.startLine = null;
-
-    this.img;
-
-    this.draw = function (ctx) {
+export default class Level {
+    constructor() {
+        this.vertices = [];
+        this.verbose = false;
+        this.startPoints = [];
+        this.startLine = null;
+    }
+    
+    draw(ctx) {
         if (this.img) {
             ctx.drawImage(this.img, 0, 0);
         }
@@ -25,7 +25,7 @@ export default function Level() {
         }
     };
 
-    this.collide = function (body) {
+    collide(body) {
         let result = false;
         let that = this;
         body.vertices.some(bodyVertex => {
@@ -46,13 +46,13 @@ export default function Level() {
         }
     };
 
-    this.updateImage = function (svg) {
+    updateImage(svg) {
         this.img = project.importSVG(svg, {
             insert: false
         });
     };
 
-    this.dispose = function() {
+    dispose() {
         if (this.img) {
             this.img.remove();
         }
