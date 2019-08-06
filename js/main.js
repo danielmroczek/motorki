@@ -710,20 +710,20 @@ function Vertex(p1, p2) {
 }
 
 let Util = {
-    rotatePoint: function (point, angle) {
+    rotatePoint(point, angle) {
         angle = angle * Math.PI / 180.0;
         return {
             x: Math.cos(angle) * (point.x) - Math.sin(angle) * (point.y),
             y: Math.sin(angle) * (point.x) + Math.cos(angle) * (point.y)
         };
     },
-    movePoint: function (point, vector) {
+    movePoint(point, vector) {
         return {
             x: point.x + vector.x,
             y: point.y + vector.y
         }
     },
-    intersectLineLine: function (a1, a2, b1, b2) {
+    intersectLineLine(a1, a2, b1, b2) {
         var result = false;
 
         var ua_t = (b2.x - b1.x) * (a1.y - b1.y) - (b2.y - b1.y) * (a1.x - b1.x);
@@ -747,7 +747,7 @@ let Util = {
 
         return result;
     },
-    pathToPoints: function pathToPointsAdaptiveSegments(path, tolerance, minDistance) {
+    pathToPoints(path, tolerance, minDistance) {
         if (!path) {
             return [];
         }
@@ -824,7 +824,7 @@ let Util = {
 
         return [].concat(...output);
     },
-    pointsToVertices: function (points) {
+    pointsToVertices(points) {
         let vertices = [];
         for (let i = 1; i < points.length; i += 1) {
             let p1 = points[i - 1];
@@ -834,10 +834,10 @@ let Util = {
         }
         return vertices;
     },
-    random: function (arr) {
+    random (arr) {
         return arr[Math.floor(Math.random() * arr.length)];
     },
-    findSide: function (vertex, point) {
+    findSide (vertex, point) {
         let d = (point.x - vertex.p1.x) * (vertex.p2.y - vertex.p1.y) - (point.y - vertex.p1.y) * (vertex.p2.x - vertex.p1.x);
         return Math.sign(d);
     }
