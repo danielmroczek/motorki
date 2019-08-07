@@ -124,6 +124,11 @@ export default {
     findSide (vertex, point) {
         let d = (point.x - vertex.p1.x) * (vertex.p2.y - vertex.p1.y) - (point.y - vertex.p1.y) * (vertex.p2.x - vertex.p1.x);
         return Math.sign(d);
+    },
+
+    async loadSvg(svgSource) {
+        let svgText = await (await fetch(svgSource)).text();
+        return new DOMParser().parseFromString(svgText, "image/svg+xml");
     }
 
 };

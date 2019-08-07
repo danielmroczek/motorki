@@ -31,7 +31,7 @@ class App {
         this.restart();
     }
 
-    restart(track) {
+    async restart(track) {
         if (!track) {
             track = this.trackSelector.getDefaultTrack();
         }
@@ -45,7 +45,7 @@ class App {
         this.game.init();
 
         //TODO: Refactor. Reacting to change level event?
-        let background = this.game.loadLevel('tracks/' + track + '.svg');
+        let background = await this.game.loadLevel('tracks/' + track + '.svg');
         document.body.style.background = background;
         this.game.start();
     }

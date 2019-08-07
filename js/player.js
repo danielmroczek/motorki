@@ -1,116 +1,102 @@
 import Util from './util.js';
 import Vertex from './vertex.js';
 
-export default function Player(color, layers) {
-    const skidmarkMaxSegmentLength = 5;
-    const skidmarkMaxPathLength = 100;
-    const listeners = {};
-    this.position = {
-        x: 400,
-        y: 350
-    };
-    this.height = 20;
-    this.width = 7;
+export default class Player {
+    constructor(color, layers) {
+        this.skidmarkMaxSegmentLength = 5;
+        this.skidmarkMaxPathLength = 100;
+        this.listeners = {};
+        this.position = {
+            x: 400,
+            y: 350
+        };
+        this.height = 20;
+        this.width = 7;
+    
+        this.angle = 90;
+        this.anglespeed = 0;
+        this.anglespeedAccel = 1.5;
+        this.anglespeedMinMax = 5;
+        this.anglespeedBrake = 5;
+    
+        this.maxSpeed = 20;
+        this.minSpeed = 2;
+        this.speed = this.minSpeed;
+        this.acceleration = 0.8;
+    
+        this.verbose = false;
+        this.vertices = [];
+        this.cheat = false;
+    
+        this.color = color;
+        this.colors = {
+            main: "#F44336",
+            front: "#4CAF50",
+            back: "#795548",
+            debug: "#E91E63"
+        };
+    
+        this.controls = {
+            "left": 0,
+            "right": 0
+        };
+    
+        // if player has moved already
+        this.started = false;
+        // if player has crossed start line for the first time
+        this.startedLap = false;
 
-    this.angle = 90;
-    this.anglespeed = 0;
-    this.anglespeedAccel = 1.5;
-    this.anglespeedMinMax = 5;
-    this.anglespeedBrake = 5;
-
-    this.maxSpeed = 20;
-    this.minSpeed = 2;
-    this.speed = this.minSpeed;
-    this.acceleration = 0.8;
-
-    this.verbose = false;
-    this.vertices = [];
-    this.cheat = false;
-
-    this.color = color;
-    this.colors = {
-        main: "#F44336",
-        front: "#4CAF50",
-        back: "#795548",
-        debug: "#E91E63"
-    };
-
-    this.controls = {
-        "left": 0,
-        "right": 0
-    };
-
-    // if player has moved already
-    this.started = false;
-    // if player has crossed start line for the first time
-    this.startedLap = false;
-
-    let defaultVertices = [
-        {
-            x: -this.width / 2,
-            y: -this.height / 2
-        }, {
-            x: this.width / 2,
-            y: -this.height / 2
-        }, {
-            x: this.width / 2,
-            y: this.height / 2
-        }, {
-            x: -this.width / 2,
-            y: this.height / 2
-        }
-    ];
-
-    this.skidmark = new Path({
-        strokeColor: new Color(0, 0, 0, 0.75),
-        strokeWidth: 4,
-        strokeCap: 'butt',
-        strokeJoin: 'round',
-        dashArray: [1.5, 1.5]
-    });
-
-    this.skidmarkRasterGroup = new Group();
-    this.skidmarkRasterGroup.addChild(this.skidmark);
-    layers.skidmarks.addChild(this.skidmarkRasterGroup);
-
-    let svg = $.get({
-        url: `img/moto-${color}.svg`,
-        async: false
-    }).responseXML;
-
-    let body = project.importSVG(svg, {
-        insert: false
-    });
-    layers.players.addChild(body);
-
-    body.applyMatrix = false;
-
-    let debugBody;
-
-    if (this.verbose) {
-        debugBody = new Path.Circle({
-            center: this.position,
-            radius: 5,
-            fillColor: this.colors.debug
+        this.defaultVertices = [
+            {
+                x: -this.width / 2,
+                y: -this.height / 2
+            }, {
+                x: this.width / 2,
+                y: -this.height / 2
+            }, {
+                x: this.width / 2,
+                y: this.height / 2
+            }, {
+                x: -this.width / 2,
+                y: this.height / 2
+            }
+        ];
+    
+        this.layers = layers;
+        this.skidmark = new Path({
+            strokeColor: new Color(0, 0, 0, 0.75),
+            strokeWidth: 4,
+            strokeCap: 'butt',
+            strokeJoin: 'round',
+            dashArray: [1.5, 1.5]
         });
 
-        debugBody.applyMatrix = false;
+        this.skidmarkRasterGroup = new Group();
+        this.skidmarkRasterGroup.addChild(this.skidmark);
+        this.layers.skidmarks.addChild(this.skidmarkRasterGroup);
+
+        if (this.verbose) {
+            this.debugBody = new Path.Circle({
+                center: this.position,
+                radius: 5,
+                fillColor: this.colors.debug
+            });
+    
+            this.debugBody.applyMatrix = false;
+        }
     }
 
-    this.updateVertices = function () {
-        let points = [];
-        defaultVertices.forEach(p => {
-            points.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
+    async init() {
+        this.svg = await Util.loadSvg(`img/moto-${this.color}.svg`);
+
+        this.body = project.importSVG(this.svg, {
+            insert: false
         });
+        this.layers.players.addChild(this.body);
+        this.body.applyMatrix = false;
+    }
 
-        points.push(points[0]);
-        let newVertices = Vertex.fromPoints(points);
-
-        // using vertices in correct order - front, right, left, back
-        this.vertices = [newVertices[0], newVertices[1], newVertices[3], newVertices[2]];
-    };
-
-    this.move = function (timediff) {
+    move(timediff) {
         if (this.started) {
             this.angle %= 360;
 
@@ -157,17 +143,31 @@ export default function Player(color, layers) {
             this.lapTime += timediff;
         }
         //console.log(this.angle);
-    };
-    this.draw = function (e) {
-        body.position = new Point(this.position);
-        body.rotation = this.angle + this.speed * this.anglespeed;
+    }
 
-        let frontWheel = body.children["front-wheel"];
-        let backWheel = body.children["back-wheel"];
+    updateVertices() {
+        let points = [];
+        this.defaultVertices.forEach(p => {
+            points.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
+        });
+
+        points.push(points[0]);
+        let newVertices = Vertex.fromPoints(points);
+
+        // using vertices in correct order - front, right, left, back
+        this.vertices = [newVertices[0], newVertices[1], newVertices[3], newVertices[2]];
+    }
+
+    draw(e) {
+        this.body.position = new Point(this.position);
+        this.body.rotation = this.angle + this.speed * this.anglespeed;
+
+        let frontWheel = this.body.children["front-wheel"];
+        let backWheel = this.body.children["back-wheel"];
         frontWheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
 
-        if (debugBody) {
-            debugBody.position = new Point(this.position);
+        if (this.debugBody) {
+            this.debugBody.position = new Point(this.position);
         }
 
         if (!this.lastPosition ||
@@ -178,14 +178,14 @@ export default function Player(color, layers) {
 
         let newPoint = backWheel.localToGlobal(backWheel.position);
         if (this.skidmark.lastCurve &&
-            this.skidmark.lastCurve.length < skidmarkMaxSegmentLength) {
+            this.skidmark.lastCurve.length < this.skidmarkMaxSegmentLength) {
 
             this.skidmark.lastSegment.point = newPoint;
         } else {
             this.skidmark.add(newPoint);
         }
 
-        if (this.skidmark.length > skidmarkMaxPathLength) {
+        if (this.skidmark.length > this.skidmarkMaxPathLength) {
             //this.skidmark.simplify();
             let raster = this.skidmarkRasterGroup.rasterize();
             this.skidmarkRasterGroup.remove();
@@ -197,11 +197,12 @@ export default function Player(color, layers) {
             this.skidmark.add(lastSegment);
             this.skidmark.dashOffset = (length + this.skidmark.dashOffset) % 3;
             this.skidmarkRasterGroup.addChild(this.skidmark);
-            layers.skidmarks.addChild(this.skidmarkRasterGroup);
+            this.layers.skidmarks.addChild(this.skidmarkRasterGroup);
         }
 
     };
-    this.checkLap = function (startLine) {
+
+    checkLap(startLine) {
         if (!startLine || !this.lastPosition) {
             return;
         }
@@ -222,7 +223,7 @@ export default function Player(color, layers) {
         }
     };
 
-    this.finishAndStartLap = function () {
+    finishAndStartLap() {
         let currentTime = this.lapTime;
         this.lapTime = 0;
 
@@ -238,7 +239,7 @@ export default function Player(color, layers) {
         });
     };
 
-    this.steerOff = function (s) {
+    steerOff(s) {
         if (!s) {
             // turn all off
             Object.keys(this.controls).forEach(control => {
@@ -250,11 +251,11 @@ export default function Player(color, layers) {
 
     };
 
-    this.steerOn = function (s) {
+    steerOn(s) {
         this.controls[s] = 1;
     };
 
-    this.onCollide = function (vertex) {
+    onCollide(vertex) {
         // What to do?
 
         this.position = this.lastPosition;
@@ -265,27 +266,27 @@ export default function Player(color, layers) {
 
     };
 
-    this.dispose = function () {
-        body.remove();
+    dispose() {
+        this.body.remove();
     };
 
-    this.addEventListener = function(event, callback) {
+    addEventListener(event, callback) {
         if (!event || typeof callback !== "function" ) {
             return;
         }
 
-        let eventListeners = listeners[event];
+        let eventListeners = this.listeners[event];
         if (!eventListeners) {
             eventListeners = [];
-            listeners[event] = eventListeners;
+            this.listeners[event] = eventListeners;
         }
 
 
         eventListeners.push(callback);
     };
 
-    this.emit = function(event, data) {
-        let eventListeners = listeners[event];
+    emit(event, data) {
+        let eventListeners = this.listeners[event];
         if (!eventListeners) {
             return;
         }

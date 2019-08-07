@@ -44,14 +44,14 @@ export default class Game {
 
     initResults() {
         this.results = {
-            current: $('#results .current'),
-            last: $('#results .last'),
-            best: $('#results .best')
+            current: document.querySelector('#results .current'),
+            last: document.querySelector('#results .last'),
+            best: document.querySelector('#results .best')
         };
 
         this.best = Number.MAX_VALUE;
 
-        Object.values(results).forEach(result => result.text("N/A"));
+        Object.values(results).forEach(result => result.textContent = "N/A");
     }
 
     initLayers() {
@@ -77,17 +77,14 @@ export default class Game {
 
 
     //TODO: move to level
-    loadLevel(svgSource) {
+    async loadLevel(svgSource) {
         // TODO: use fetch
-        let svg = $.get({
-            url: svgSource,
-            async: false
-        }).responseXML;
 
+        let svg = await Util.loadSvg(svgSource);
         let vertices = [];
 
         //TODO: use queryselector
-        $(svg).find('path.track').toArray().forEach(path => {
+        svg.querySelectorAll('path.track').forEach(path => {
             let points = Util.pathToPoints(path, this.SVG_PRECISION);
             vertices = vertices.concat(Vertex.fromPoints(points));
         });
@@ -97,18 +94,17 @@ export default class Game {
         this.level.updateImage(svg);
 
         // start points for each player
-        $(svg).find('metadata > start').each((i, startPoint) => {
-            startPoint = $(startPoint);
+        svg.querySelectorAll('metadata > start').forEach(startPoint => {
             this.level.startPoints.push({
-                x: parseInt(startPoint.attr('x')),
-                y: parseInt(startPoint.attr('y')),
-                angle: parseInt(startPoint.attr('a')),
-                speed: parseInt(startPoint.attr('s')) // unused for now
+                x: parseInt(startPoint.getAttribute('x')),
+                y: parseInt(startPoint.getAttribute('y')),
+                angle: parseInt(startPoint.getAttribute('a')),
+                speed: parseInt(startPoint.getAttribute('s')) // unused for now
             });
         });
 
         // start line for time measuring
-        let startLinePath = $(svg).find('path.startline')[0];
+        let startLinePath = svg.querySelector('path.startline');
         if (startLinePath) {
             let start = startLinePath.getPointAtLength(0);
             let end = startLinePath.getPointAtLength(startLinePath.getTotalLength());
@@ -120,11 +116,11 @@ export default class Game {
         return background;
     }
 
-    start() {
+    async start() {
         this.stopped = null;
 
         this.setupLayers();
-        this.setupPlayers();
+        await this.setupPlayers();
 
         this.onResize();
 
@@ -155,8 +151,10 @@ export default class Game {
         }
     }
 
-    setupPlayers() {
+    async setupPlayers() {
         this.player = new Player(Util.random(this.playerColors), this.layers);
+        await this.player.init();
+
         this.player.addEventListener('lap', data => {
             this.playerLap(data);
         });
@@ -292,8 +290,8 @@ export default class Game {
         });
 
         // TODO: change to PlayerLap event
-        if (this.player.startedLap) {
-            this.results.current.text((this.player.lapTime / 1000).toFixed(2));
+        if (this.player && this.player.startedLap) {
+            this.results.current.textContent = (this.player.lapTime / 1000).toFixed(2);
         }
     }
 
@@ -308,10 +306,10 @@ export default class Game {
 
     playerLap(data) {
         const lapTimeFormatted = (data.time / 1000).toFixed(2);
-        this.results.last.text(lapTimeFormatted);
+        this.results.last.textContent = lapTimeFormatted;
         if (data.time < this.best) {
             this.best = data.time;
-            this.results.best.text(lapTimeFormatted);
+            this.results.best.textContent = lapTimeFormatted;
         }
         //console.log(`${data.player.color} player has ended lap in ${lapTimeFormatted}`);
     };
