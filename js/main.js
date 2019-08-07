@@ -1,44 +1,49 @@
 import Game from "./game.js";
+import trackSelector from "./trackSelector.js";
 
 window.addEventListener('load', () => {
-    paper.install(window);
-    paper.settings.insertItems = false;
+    let app = new App();
+    app.init();
+});
 
-    let game;
+class App {
+    constructor() {
+        // Nothing to do
+    }
 
-    let tracks = [
-        '294',
-        'ataq',
-        'berserker',
-        'bydgoszcz',
-        'byMateusz',
-        'hamar'
-    ];
+    init() {
+        this.initPaper();
+        this.initTrackSelector();
+        this.start();
+    }
 
-    let sel = document.getElementById('trackList');
-    tracks.forEach(track => {
-        let opt = document.createElement('option');
-        opt.innerHTML = track;
-        opt.value = track;
-        sel.appendChild(opt);
-    });
+    initPaper() {
+        paper.install(window);
+        paper.settings.insertItems = false;
+    }
 
-    restart(tracks[0]);
+    initTrackSelector() {
+        this.trackSelector = new trackSelector(this);
+        this.trackSelector.init();
+    }
 
-    sel.addEventListener('change', e => {
-        sel.blur();
-        restart(e.target.value);
-    });
+    start() {
+        this.restart();
+    }
 
-    function restart(track) {
-        if (game) {
+    restart(track) {
+        if (!track) {
+            track = this.trackSelector.getDefaultTrack();
+        }
+
+        if (this.game) {
             //project.clear();
             view.remove();
-            game.stop();
+            this.game.stop();
         }
-        game = new Game();
-        let background = game.loadLevel('tracks/' + track + '.svg');
+        this.game = new Game();
+        let background = this.game.loadLevel('tracks/' + track + '.svg');
         document.body.style.background = background;
-        game.start();
+        this.game.start();
     }
-});
+}
