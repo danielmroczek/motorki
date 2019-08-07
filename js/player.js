@@ -1,4 +1,5 @@
-import { Util, Vertex } from './util.js';
+import Util from './util.js';
+import Vertex from './vertex.js';
 
 export default function Player(color, layers) {
     const skidmarkMaxSegmentLength = 5;
@@ -103,7 +104,7 @@ export default function Player(color, layers) {
         });
 
         points.push(points[0]);
-        let newVertices = Util.pointsToVertices(points);
+        let newVertices = Vertex.fromPoints(points);
 
         // using vertices in correct order - front, right, left, back
         this.vertices = [newVertices[0], newVertices[1], newVertices[3], newVertices[2]];
@@ -282,6 +283,7 @@ export default function Player(color, layers) {
 
         eventListeners.push(callback);
     };
+
     this.emit = function(event, data) {
         let eventListeners = listeners[event];
         if (!eventListeners) {

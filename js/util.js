@@ -1,29 +1,4 @@
-function Vertex(p1, p2) {
-    this.p1 = p1;
-    this.p2 = p2;
-
-    this.x = Math.min(p1.x, p2.x);
-    this.y = Math.min(p1.y, p2.y);
-
-    this.width = Math.max(p1.x, p2.x) - this.x;
-    this.height = Math.max(p1.y, p2.y) - this.y;
-
-    let that = this;
-
-    function boundingBoxCollision(vertex) {
-        return that.x < vertex.x + vertex.width &&
-            that.x + that.width > vertex.x &&
-            that.y < vertex.y + vertex.height &&
-            that.height + that.y > vertex.y;
-    }
-
-    this.collide = function (vertex) {
-        return boundingBoxCollision(vertex) && Util.intersectLineLine(this.p1, this.p2, vertex.p1, vertex.p2);
-
-    }
-}
-
-let Util = {
+export default {
     rotatePoint(point, angle) {
         angle = angle * Math.PI / 180.0;
         return {
@@ -31,12 +6,14 @@ let Util = {
             y: Math.sin(angle) * (point.x) + Math.cos(angle) * (point.y)
         };
     },
+
     movePoint(point, vector) {
         return {
             x: point.x + vector.x,
             y: point.y + vector.y
         }
     },
+
     intersectLineLine(a1, a2, b1, b2) {
         var result = false;
 
@@ -61,6 +38,7 @@ let Util = {
 
         return result;
     },
+
     pathToPoints(path, tolerance, minDistance) {
         if (!path) {
             return [];
@@ -138,24 +116,14 @@ let Util = {
 
         return [].concat(...output);
     },
-    pointsToVertices(points) {
-        let vertices = [];
-        for (let i = 1; i < points.length; i += 1) {
-            let p1 = points[i - 1];
-            let p2 = points[i];
-            let v = new Vertex(p1, p2);
-            vertices.push(v);
-        }
-        return vertices;
-    },
+    
     random (arr) {
         return arr[Math.floor(Math.random() * arr.length)];
     },
+    
     findSide (vertex, point) {
         let d = (point.x - vertex.p1.x) * (vertex.p2.y - vertex.p1.y) - (point.y - vertex.p1.y) * (vertex.p2.x - vertex.p1.x);
         return Math.sign(d);
     }
 
 };
-
-export {Util, Vertex};

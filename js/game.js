@@ -1,83 +1,105 @@
 
 import Level from './level.js';
 import Player from './player.js';
-import { Util, Vertex } from './util.js';
+import Util from './util.js';
+import Vertex from './vertex.js';
 
-export default function Game() {
-    const SVG_PRECISION = 1.001; // closer to 1 -> better precision
-    const FPS = 60;
-    const HEIGHT = 448;
-    const WIDTH = 640;
-    const timestep = 1000 / FPS;
-    const canvas = document.getElementById('gc');
-    const playerColors = [
-        'red',
-        'white',
-        'yellow',
-        'blue'
-    ];
-    let map = new Rectangle(new Point(0,0), [WIDTH, HEIGHT]);
-    let center = map.getCenter();
-    let that = this;
-    that.stopped = false;
+export default class Game {
 
-    let player;
-    let level;
-    let bodies = [];
-    let lastFrameTime;
-    let loopId;
-    let delta = 0;
+    constructor() {
+        this.SVG_PRECISION = 1.001; // closer to 1 -> better precision
+        this.FPS = 60;
+        this.HEIGHT = 448;
+        this.WIDTH = 640;
+        this.CANVAS_ID = 'gc';
+        this.timestep = 1000 / this.FPS;
+        this.playerColors = [
+            'red',
+            'white',
+            'yellow',
+            'blue'
+        ];
+        this.map = new Rectangle(new Point(0,0), [this.WIDTH, this.HEIGHT]);
+        this.center = this.map.getCenter();
+        this.stopped = false;
+    
+        this.bodies = [];
+        this.delta = 0;
+    }
 
-    let results = {
-        current: $('#results .current'),
-        last: $('#results .last'),
-        best: $('#results .best')
-    };
-    Object.keys(results).forEach(result => {
-       results[result].text("N/A");
-    });
+    init() {
+        this.initPaper();
+        this.initLayers();
+        this.initResults();
+    }
+    
+    initPaper() {
+        let canvas = document.getElementById(this.CANVAS_ID);
+        paper.setup(canvas);
 
-    // Paper.js things
-    paper.setup(canvas);
-    view.onFrame = drawLoop;
-    view.onResize = onResize;
-    view.draw();
+        view.on('frame', e => this.drawLoop(e));
+        view.on('resize', e => this.onResize(e));
+        view.draw();
+    }
 
-    let layers = {
-        level: new Layer(),
-        lastSkidMarks: new Layer({
-            opacity: 0.5
-        }),
-        skidmarks: new Layer(),
-        players: new Layer()
-    };
+    initResults() {
+        this.results = {
+            current: $('#results .current'),
+            last: $('#results .last'),
+            best: $('#results .best')
+        };
 
-    Object.keys(layers).forEach(layerName => {
-        let layer = layers[layerName];
-        project.addLayer(layer);
-    });
+        this.best = Number.MAX_VALUE;
 
-    //todo: move to level
-    this.loadLevel = function (svgSource) {
+        Object.values(results).forEach(result => result.text("N/A"));
+    }
+
+    initLayers() {
+        this.layers = {
+            level: new Layer(),
+            lastSkidMarks: new Layer({
+                opacity: 0.5
+            }),
+            skidmarks: new Layer(),
+            players: new Layer()
+        };
+
+        Object.values(this.layers).forEach(layer => project.addLayer(layer));
+    }
+
+    setupLayers() {
+        this.layers.lastSkidMarks.removeChildren();
+        this.layers.lastSkidMarks.addChild(this.layers.skidmarks.rasterize());
+        this.layers.skidmarks.removeChildren();
+        this.layers.level.removeChildren();
+        this.layers.level.addChild(this.level.img);
+    }
+
+
+    //TODO: move to level
+    loadLevel(svgSource) {
+        // TODO: use fetch
         let svg = $.get({
             url: svgSource,
             async: false
         }).responseXML;
 
         let vertices = [];
+
+        //TODO: use queryselector
         $(svg).find('path.track').toArray().forEach(path => {
-            let points = Util.pathToPoints(path, SVG_PRECISION);
-            vertices = vertices.concat(Util.pointsToVertices(points));
+            let points = Util.pathToPoints(path, this.SVG_PRECISION);
+            vertices = vertices.concat(Vertex.fromPoints(points));
         });
 
-        level = new Level();
-        level.vertices = vertices;
-        level.updateImage(svg);
+        this.level = new Level();
+        this.level.vertices = vertices;
+        this.level.updateImage(svg);
 
         // start points for each player
         $(svg).find('metadata > start').each((i, startPoint) => {
             startPoint = $(startPoint);
-            level.startPoints.push({
+            this.level.startPoints.push({
                 x: parseInt(startPoint.attr('x')),
                 y: parseInt(startPoint.attr('y')),
                 angle: parseInt(startPoint.attr('a')),
@@ -90,121 +112,127 @@ export default function Game() {
         if (startLinePath) {
             let start = startLinePath.getPointAtLength(0);
             let end = startLinePath.getPointAtLength(startLinePath.getTotalLength());
-            level.startLine = new Vertex(start, end);
+            this.level.startLine = new Vertex(start, end);
         }
 
         let background = svg.querySelector('.background').style.fill;
 
         return background;
-    };
+    }
 
-    this.start = function () {
-        that.stopped = null;
+    start() {
+        this.stopped = null;
 
-        // setup layers
-        layers.lastSkidMarks.removeChildren();
-        layers.lastSkidMarks.addChild(layers.skidmarks.rasterize());
-        layers.skidmarks.removeChildren();
+        this.setupLayers();
+        this.setupPlayers();
 
-        layers.level.removeChildren();
-        layers.level.addChild(level.img);
+        this.onResize();
 
-        // setup players
-        player = new Player(Util.random(playerColors), layers);
-        player.addEventListener('lap', data => {
-            that.playerLap(data);
+        this.addHooks();
+
+        this.lastFrameTime = performance.now();
+        this.loopId = setInterval(e => this.loop(e), this.timestep);
+    }
+
+    addHooks() {
+        this.eventListeners = {
+            'keydown': e => this.onKeydown(e),
+            'keyup': e => this.onKeyup(e),
+            'touchstart': e => this.touchControl(e),
+            'touchend': e => this.touchControl(e),
+            'touchmove': e => this.touchControl(e),
+            'touchcancel': e => this.touchControl(e)
+        }
+
+        for (let [type, listener] of Object.entries(this.eventListeners)) {
+            document.addEventListener(type, listener);
+        }
+    }
+
+    removeHooks() {
+        for (let [type, listener] of Object.entries(this.eventListeners)) {
+            document.removeEventListener(type, listener);
+        }
+    }
+
+    setupPlayers() {
+        this.player = new Player(Util.random(this.playerColors), this.layers);
+        this.player.addEventListener('lap', data => {
+            this.playerLap(data);
         });
-        player.addEventListener('lapstarted', data => {
-            that.playerLapStarted(data);
+        this.player.addEventListener('lapstarted', data => {
+            this.playerLapStarted(data);
         });
-
-        bodies = [
-            player
+        this.bodies = [
+            this.player
         ];
-
-        let startPoint = Util.random(level.startPoints);
-        player.position = {
-            x: startPoint.x,
-            y: startPoint.y,
+        this.startPoint = Util.random(this.level.startPoints);
+        this.player.position = {
+            x: this.startPoint.x,
+            y: this.startPoint.y,
         };
-        player.angle = startPoint.angle;
+        this.player.angle = this.startPoint.angle;
+    }
 
-
-        // other stuff
-        onResize();
-
-        document.addEventListener("keydown", onKeydown);
-        document.addEventListener("keyup", onKeyup);
-        ['touchstart', 'touchend', 'touchmove', 'touchcancel'].forEach(event => {
-           window.addEventListener(event, touchControl);
-        });
-
-        lastFrameTime = performance.now();
-        loopId = setInterval(loop, timestep);
-    };
-
-    this.stop = function () {
+    stop() {
         let promise = new Promise((res, rej) => {
-            that.stopped = res;
+            this.stopped = res;
         });
 
-        bodies.forEach(body => {
+        this.bodies.forEach(body => {
             body.dispose();
         });
-        level.dispose();
+        this.level.dispose();
 
-        document.removeEventListener("keydown", onKeydown);
-        document.removeEventListener("keyup", onKeyup);
-        ['touchstart', 'touchend', 'touchmove', 'touchcancel'].forEach(event => {
-            window.removeEventListener(event, touchControl);
-        });
+        this.removeHooks();
         return promise;
-    };
+    }
 
-    this.restart = function () {
-        this.stop().then(this.start);
-    };
+    async restart() {
+        await this.stop();
+        this.start();
+    }
 
-    function onKeydown(e) {
-        //todo: move key constant to player
+    onKeydown(e) {
+        //TODO: move key constant to player
         switch (e.key) {
             case "ArrowLeft":
-                player.steerOn("left");
+                this.player.steerOn("left");
                 break;
 
             case "ArrowRight":
-                player.steerOn("right");
+                this.player.steerOn("right");
                 break;
 
             case "r":
             case "R":
-                that.restart();
+                this.restart();
                 return;
         }
 
         switch (e.key) {
             case "ArrowLeft":
             case "ArrowRight":
-                player.started = true;
+                this.player.started = true;
                 break;
         }
     }
 
-    function onKeyup(e) {
+    onKeyup(e) {
         switch (e.key) {
             // LEFT
             case "ArrowLeft":
-                player.steerOff("left");
+                this.player.steerOff("left");
                 break;
 
             // RIGHT
             case "ArrowRight":
-                player.steerOff("right");
+                this.player.steerOff("right");
                 break;
         }
     }
 
-    function touchControl(e) {
+    touchControl(e) {
         let touches = Array.prototype.slice.call(e.touches);
         let controls = {
             left: 0,
@@ -219,7 +247,7 @@ export default function Game() {
             }
         });
 
-        player.steerOff();
+        this.player.steerOff();
         if (controls.left === controls.right) {
             return;
         }
@@ -230,64 +258,65 @@ export default function Game() {
             player.steerOn('right');
         }
 
-        player.started = true;
+        this.player.started = true;
     }
 
-    function loop() {
+    loop() {
         let timestamp = performance.now();
-        delta += timestamp - lastFrameTime;
-        lastFrameTime = timestamp;
+        this.delta += timestamp - this.lastFrameTime;
+        this.lastFrameTime = timestamp;
 
-        while (delta >= timestep) {
-            tick(timestep);
-            delta -= timestep;
+        while (this.delta >= this.timestep) {
+            this.tick(this.timestep);
+            this.delta -= this.timestep;
         }
 
-        if (that.stopped) {
-            clearInterval(loopId);
-            that.stopped();
+        if (this.stopped) {
+            clearInterval(this.loopId);
+            this.stopped();
         }
     }
 
-    function tick(timediff) {
-        bodies.forEach(body => {
+    tick(timediff) {
+        this.bodies.forEach(body => {
             body.move(timediff);
             //collideBodies(body);
-            level.collide(body);
-            body.checkLap(level.startLine);
+            this.level.collide(body);
+            body.checkLap(this.level.startLine);
         });
     }
 
-    function drawLoop(e) {
-        bodies.forEach(body => {
+    drawLoop(e) {
+        this.bodies.forEach(body => {
             body.draw(e);
         });
 
-        if (player.startedLap) {
-            results.current.text((player.lapTime / 1000).toFixed(2));
+        // TODO: change to PlayerLap event
+        if (this.player.startedLap) {
+            this.results.current.text((this.player.lapTime / 1000).toFixed(2));
         }
     }
 
-    function onResize(event) {
-        view.setZoom(view.getViewSize().getWidth() / WIDTH);
-        view.setCenter(center);
+    onResize(event) {
+        view.setZoom(view.getViewSize().getWidth() / this.WIDTH);
+        view.setCenter(this.center);
     }
 
-    this.dispose = function() {
-        level.dispose();
+    dispose() {
+        this.level.dispose();
     };
 
-    let best = Number.MAX_VALUE;
-    this.playerLap = function (data) {
-        results.last.text((data.time / 1000).toFixed(2));
-        if (data.time < best) {
-            best = data.time;
-            results.best.text((data.time / 1000).toFixed(2));
+    playerLap(data) {
+        const lapTimeFormatted = (data.time / 1000).toFixed(2);
+        this.results.last.text(lapTimeFormatted);
+        if (data.time < this.best) {
+            this.best = data.time;
+            this.results.best.text(lapTimeFormatted);
         }
-        //console.log(`${data.player.color} player has ended lap in ${(data.time / 1000).toFixed(2)}`);
+        //console.log(`${data.player.color} player has ended lap in ${lapTimeFormatted}`);
     };
 
-    this.playerLapStarted = function (data) {
+    playerLapStarted(data) {
         // Nothing to do as for now
     };
 }

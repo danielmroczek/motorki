@@ -42,6 +42,9 @@ class App {
             this.game.stop();
         }
         this.game = new Game();
+        this.game.init();
+
+        //TODO: Refactor. Reacting to change level event?
         let background = this.game.loadLevel('tracks/' + track + '.svg');
         document.body.style.background = background;
         this.game.start();
