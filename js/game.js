@@ -209,6 +209,16 @@ export default class Game {
                 this.players[0].steerOn("right");
                 break;
 
+            case "A":
+            case "a":
+                this.players[1].steerOn("left");
+                break;
+
+            case "S":
+            case "s":
+                this.players[1].steerOn("right");
+                break;
+
             case "1":
                 this.playersCount = 1;
                 this.restart();
@@ -231,6 +241,13 @@ export default class Game {
             case "ArrowRight":
                 this.players[0].started = true;
                 break;
+
+            case "A":
+            case "a":
+            case "S":
+            case "s":
+                this.players[1].started = true;
+                break;
         }
     }
 
@@ -244,6 +261,16 @@ export default class Game {
             // RIGHT
             case "ArrowRight":
                 this.players[0].steerOff("right");
+                break;
+
+            case "A":
+            case "a":
+                this.players[1].steerOff("left");
+                break;
+
+            case "S":
+            case "s":
+                this.players[1].steerOff("right");
                 break;
         }
     }
