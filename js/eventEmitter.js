@@ -14,7 +14,6 @@ export default class {
             this.listeners[event] = eventListeners;
         }
 
-
         eventListeners.push(callback);
     }
 
