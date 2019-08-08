@@ -167,8 +167,7 @@ export default class Player {
     draw(e) {
         this.body.position = new Point(this.position);
         this.body.rotation = this.angle + this.speed * this.anglespeed;
-
-        
+  
         this.wheels.front.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
 
         if (this.debugBody) {
@@ -194,7 +193,7 @@ export default class Player {
             this.skidmark.add(newPoint);
         }
         if (this.skidmark.length > this.skidmarkMaxPathLength) {
-            this.skidmark.simplify();
+            // this.skidmark.simplify();
             let raster = this.skidmarkRasterGroup.rasterize();
             this.skidmarkRasterGroup.remove();
             this.skidmarkRasterGroup = new Group();

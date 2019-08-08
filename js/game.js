@@ -19,11 +19,14 @@ export default class Game {
             'yellow',
             'blue'
         ];
-        this.map = new Rectangle(new Point(0,0), [this.WIDTH, this.HEIGHT]);
+
+        this.playersCount = 1;
+        this.players = [];
+
+        this.map = new Rectangle(new Point(0, 0), [this.WIDTH, this.HEIGHT]);
         this.center = this.map.getCenter();
         this.stopped = false;
-    
-        this.bodies = [];
+
         this.delta = 0;
     }
 
@@ -32,7 +35,7 @@ export default class Game {
         this.initLayers();
         this.initResults();
     }
-    
+
     initPaper() {
         let canvas = document.getElementById(this.CANVAS_ID);
         paper.setup(canvas);
@@ -65,14 +68,6 @@ export default class Game {
         };
 
         Object.values(this.layers).forEach(layer => project.addLayer(layer));
-    }
-
-    setupLayers() {
-        this.layers.lastSkidMarks.removeChildren();
-        this.layers.lastSkidMarks.addChild(this.layers.skidmarks.rasterize());
-        this.layers.skidmarks.removeChildren();
-        this.layers.level.removeChildren();
-        this.layers.level.addChild(this.level.img);
     }
 
 
@@ -127,6 +122,42 @@ export default class Game {
         this.loopId = setInterval(e => this.loop(e), this.timestep);
     }
 
+    setupLayers() {
+        this.layers.lastSkidMarks.removeChildren();
+        this.layers.lastSkidMarks.addChild(this.layers.skidmarks.rasterize());
+        this.layers.skidmarks.removeChildren();
+        this.layers.level.removeChildren();
+        this.layers.level.addChild(this.level.img);
+    }
+
+    async setupPlayers() {
+        this.players = [];
+        let startPoints = Util.shuffle(this.level.startPoints);
+        let colors = Util.shuffle(this.playerColors);
+
+        for (let i = 0; i < this.playersCount; i += 1) {
+            let player = new Player(colors.pop(), this.layers);
+            await player.init();
+
+            player.addEventListener('lap', data => {
+                this.playerLap(data);
+            });
+            player.addEventListener('lapstarted', data => {
+                this.playerLapStarted(data);
+            });
+
+            let startPoint = startPoints.pop();
+
+            player.position = {
+                x: startPoint.x,
+                y: startPoint.y,
+            };
+            player.angle = startPoint.angle;
+
+            this.players.push(player);
+        };
+    }
+
     addHooks() {
         this.eventListeners = {
             'keydown': e => this.onKeydown(e),
@@ -148,34 +179,13 @@ export default class Game {
         }
     }
 
-    async setupPlayers() {
-        this.player = new Player(Util.random(this.playerColors), this.layers);
-        await this.player.init();
-
-        this.player.addEventListener('lap', data => {
-            this.playerLap(data);
-        });
-        this.player.addEventListener('lapstarted', data => {
-            this.playerLapStarted(data);
-        });
-        this.bodies = [
-            this.player
-        ];
-        this.startPoint = Util.random(this.level.startPoints);
-        this.player.position = {
-            x: this.startPoint.x,
-            y: this.startPoint.y,
-        };
-        this.player.angle = this.startPoint.angle;
-    }
-
     stop() {
         let promise = new Promise((res, rej) => {
             this.stopped = res;
         });
 
-        this.bodies.forEach(body => {
-            body.dispose();
+        this.players.forEach(player => {
+            player.dispose();
         });
         this.level.dispose();
 
@@ -192,12 +202,23 @@ export default class Game {
         //TODO: move key constant to player
         switch (e.key) {
             case "ArrowLeft":
-                this.player.steerOn("left");
+                this.players[0].steerOn("left");
                 break;
 
             case "ArrowRight":
-                this.player.steerOn("right");
+                this.players[0].steerOn("right");
                 break;
+
+            case "1":
+                this.playersCount = 1;
+                this.restart();
+                return;
+
+            case "2":
+                this.playersCount = 2;
+                this.restart();
+                return;
+
 
             case "r":
             case "R":
@@ -208,7 +229,7 @@ export default class Game {
         switch (e.key) {
             case "ArrowLeft":
             case "ArrowRight":
-                this.player.started = true;
+                this.players[0].started = true;
                 break;
         }
     }
@@ -217,12 +238,12 @@ export default class Game {
         switch (e.key) {
             // LEFT
             case "ArrowLeft":
-                this.player.steerOff("left");
+                this.players[0].steerOff("left");
                 break;
 
             // RIGHT
             case "ArrowRight":
-                this.player.steerOff("right");
+                this.players[0].steerOff("right");
                 break;
         }
     }
@@ -242,18 +263,18 @@ export default class Game {
             }
         });
 
-        this.player.steerOff();
+        this.players[0].steerOff();
         if (controls.left === controls.right) {
             return;
         }
 
         if (controls.left > controls.right) {
-            player.steerOn('left');
+            this.players[0].steerOn('left');
         } else {
-            player.steerOn('right');
+            this.players[0].steerOn('right');
         }
 
-        this.player.started = true;
+        this.players[0].started = true;
     }
 
     loop() {
@@ -273,22 +294,22 @@ export default class Game {
     }
 
     tick(timediff) {
-        this.bodies.forEach(body => {
-            body.move(timediff);
-            //collideBodies(body);
-            this.level.collide(body);
-            body.checkLap(this.level.startLine);
+        this.players.forEach(player => {
+            player.move(timediff);
+            //collideBodies(player);
+            this.level.collide(player);
+            player.checkLap(this.level.startLine);
         });
     }
 
     drawLoop(e) {
-        this.bodies.forEach(body => {
-            body.draw(e);
+        this.players.forEach(player => {
+            player.draw(e);
         });
 
         // TODO: change to PlayerLap event
-        if (this.player && this.player.startedLap) {
-            this.results.current.textContent = (this.player.lapTime / 1000).toFixed(2);
+        if (this.players[0] && this.players[0].startedLap) {
+            this.results.current.textContent = (this.players[0].lapTime / 1000).toFixed(2);
         }
     }
 

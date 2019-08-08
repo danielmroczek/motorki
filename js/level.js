@@ -1,7 +1,7 @@
 export default class Level {
     constructor() {
         this.vertices = [];
-        this.verbose = true;
+        this.verbose = false;
         this.startPoints = [];
         this.startLine = null;
     }

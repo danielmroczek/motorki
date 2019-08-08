@@ -120,6 +120,20 @@ export default {
     random (arr) {
         return arr[Math.floor(Math.random() * arr.length)];
     },
+
+    /**
+     * Return a shuffled version of an array. Doesn't change original array.
+     * 
+     * @param {Array} param0 
+     * @returns {Array} Shuffled Array
+     */
+    shuffle([...arr]) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i],arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    },
     
     findSide (vertex, point) {
         let d = (point.x - vertex.p1.x) * (vertex.p2.y - vertex.p1.y) - (point.y - vertex.p1.y) * (vertex.p2.x - vertex.p1.x);
