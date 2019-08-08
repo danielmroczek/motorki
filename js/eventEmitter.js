@@ -1,4 +1,8 @@
 export default class {
+    constructor() {
+        this.listeners = {};
+    }
+
     addEventListener(event, callback) {
         if (!event || typeof callback !== "function" ) {
             return;

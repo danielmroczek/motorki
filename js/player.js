@@ -8,7 +8,7 @@ export default class Player extends EventEmitter{
 
         this.skidmarkMaxSegmentLength = 5;
         this.skidmarkMaxPathLength = 100;
-        this.listeners = {};
+        
         this.position = {
             x: 400,
             y: 350
