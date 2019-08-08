@@ -92,6 +92,12 @@ export default class Player {
         this.body = project.importSVG(this.svg, {
             insert: false
         });
+
+        this.wheels = {
+            front: this.body.children["front-wheel"],
+            back: this.body.children["back-wheel"]
+        }
+
         this.layers.players.addChild(this.body);
         this.body.applyMatrix = false;
     }
@@ -162,9 +168,8 @@ export default class Player {
         this.body.position = new Point(this.position);
         this.body.rotation = this.angle + this.speed * this.anglespeed;
 
-        let frontWheel = this.body.children["front-wheel"];
-        let backWheel = this.body.children["back-wheel"];
-        frontWheel.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
+        
+        this.wheels.front.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
 
         if (this.debugBody) {
             this.debugBody.position = new Point(this.position);
@@ -176,17 +181,20 @@ export default class Player {
             return;
         }
 
-        let newPoint = backWheel.localToGlobal(backWheel.position);
+        this.drawSkidmarks();
+    };
+
+    drawSkidmarks() {
+        let newPoint = this.wheels.back.localToGlobal(this.wheels.back.position);
         if (this.skidmark.lastCurve &&
             this.skidmark.lastCurve.length < this.skidmarkMaxSegmentLength) {
-
             this.skidmark.lastSegment.point = newPoint;
-        } else {
+        }
+        else {
             this.skidmark.add(newPoint);
         }
-
         if (this.skidmark.length > this.skidmarkMaxPathLength) {
-            //this.skidmark.simplify();
+            this.skidmark.simplify();
             let raster = this.skidmarkRasterGroup.rasterize();
             this.skidmarkRasterGroup.remove();
             this.skidmarkRasterGroup = new Group();
@@ -199,8 +207,7 @@ export default class Player {
             this.skidmarkRasterGroup.addChild(this.skidmark);
             this.layers.skidmarks.addChild(this.skidmarkRasterGroup);
         }
-
-    };
+    }
 
     checkLap(startLine) {
         if (!startLine || !this.lastPosition) {

@@ -78,12 +78,9 @@ export default class Game {
 
     //TODO: move to level
     async loadLevel(svgSource) {
-        // TODO: use fetch
-
         let svg = await Util.loadSvg(svgSource);
         let vertices = [];
 
-        //TODO: use queryselector
         svg.querySelectorAll('path.track').forEach(path => {
             let points = Util.pathToPoints(path, this.SVG_PRECISION);
             vertices = vertices.concat(Vertex.fromPoints(points));

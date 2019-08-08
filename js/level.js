@@ -1,11 +1,18 @@
 export default class Level {
     constructor() {
         this.vertices = [];
-        this.verbose = false;
+        this.verbose = true;
         this.startPoints = [];
         this.startLine = null;
     }
     
+
+    /**
+     * NOT USED since using Paper JS
+     * @deprecated
+     * Draw level.
+     * @param {CanvasRenderingContext2D} ctx 
+     */
     draw(ctx) {
         if (this.img) {
             ctx.drawImage(this.img, 0, 0);
@@ -27,9 +34,9 @@ export default class Level {
 
     collide(body) {
         let result = false;
-        let that = this;
+
         body.vertices.some(bodyVertex => {
-            that.vertices.some(levelVertex => {
+            this.vertices.some(levelVertex => {
                 if (levelVertex.collide(bodyVertex)) {
                     if (!body.inCollision) {
                         body.onCollide(levelVertex);
