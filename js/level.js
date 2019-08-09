@@ -1,11 +1,61 @@
+import Util from "./util.js";
+import Vertex from "./vertex.js";
+
 export default class Level {
-    constructor() {
-        this.vertices = [];
+
+    /**
+     * 
+     * @param {Document} svg 
+     */
+    constructor(svg) {
+        if (!svg) {
+            return;
+        }
+
         this.verbose = false;
+
+        // vertices for collisions with track
+        this.vertices = [];
+        svg.querySelectorAll('path.track').forEach(path => {
+            let points = Util.pathToPoints(path, this.SVG_PRECISION);
+            this.vertices = this.vertices.concat(Vertex.fromPoints(points));
+        });
+
+        // start points for each player
         this.startPoints = [];
-        this.startLine = null;
+        svg.querySelectorAll('metadata > start').forEach(startPoint => {
+            this.startPoints.push({
+                x: parseInt(startPoint.getAttribute('x')),
+                y: parseInt(startPoint.getAttribute('y')),
+                angle: parseInt(startPoint.getAttribute('a')),
+                speed: parseInt(startPoint.getAttribute('s')) // unused for now
+            });
+        });
+
+        // start line for time measuring
+        let startLinePath = svg.querySelector('path.startline');
+        if (startLinePath) {
+            let start = startLinePath.getPointAtLength(0);
+            let end = startLinePath.getPointAtLength(startLinePath.getTotalLength());
+            this.startLine = new Vertex(start, end);
+        }
+
+        this.img = project.importSVG(svg, {
+            insert: false
+        });
+
+        this.background = svg.querySelector('.background').style.fill;
     }
     
+    /**
+     * Builder like method.
+     * 
+     * @param {String} svgSource url with svg uri 
+     */
+    static async load(svgSource) {
+        let svg = await Util.loadSvg(svgSource);
+        return new Level(svg);
+    }
 
     /**
      * NOT USED since using Paper JS
@@ -53,6 +103,7 @@ export default class Level {
         }
     };
 
+    // TODO: delete method
     updateImage(svg) {
         this.img = project.importSVG(svg, {
             insert: false

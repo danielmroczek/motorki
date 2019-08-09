@@ -1,5 +1,5 @@
 import Game from "./game.js";
-import trackSelector from "./trackSelector.js";
+import TrackSelector from "./trackSelector.js";
 
 window.addEventListener('load', () => {
     let app = new App();
@@ -23,17 +23,20 @@ class App {
     }
 
     initTrackSelector() {
-        this.trackSelector = new trackSelector(this);
+        this.trackSelector = new TrackSelector(this);
         this.trackSelector.init();
+        this.trackSelector.addEventListener("change", track => {
+            this.restart(track);
+        })
     }
 
     start() {
-        this.restart();
+        this.restart(this.trackSelector.getDefaultTrack());
     }
 
     async restart(track) {
         if (!track) {
-            track = this.trackSelector.getDefaultTrack();
+            throw new Error("Invalid argument");
         }
 
         if (this.game) {

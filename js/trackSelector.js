@@ -1,5 +1,8 @@
-export default class {
+import EventEmitter from './eventEmitter.js';
+
+export default class extends EventEmitter{
     constructor(app) {
+        super();
         this.app = app;
         this.selector = document.getElementById('trackList');
         this.tracks = [
@@ -29,7 +32,7 @@ export default class {
     addHooks() {
         this.selector.addEventListener('change', e => {
             this.selector.blur();
-            this.app.restart(e.target.value);
+            this.emit("change", e.target.value);
         });
     }
 

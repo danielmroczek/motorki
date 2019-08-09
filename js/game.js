@@ -2,11 +2,12 @@
 import Level from './level.js';
 import Player from './player.js';
 import Util from './util.js';
-import Vertex from './vertex.js';
+import EventEmitter from './eventEmitter.js';
 
-export default class Game {
+export default class Game extends EventEmitter{
 
     constructor() {
+        super();
         this.SVG_PRECISION = 1.001; // closer to 1 -> better precision
         this.FPS = 60;
         this.HEIGHT = 448;
@@ -30,6 +31,11 @@ export default class Game {
         this.delta = 0;
     }
 
+    static async build(track) {
+        //TODO: implement?
+
+    }
+
     init() {
         this.initPaper();
         this.initLayers();
@@ -45,6 +51,7 @@ export default class Game {
         view.draw();
     }
 
+    // TODO: move somewhere
     initResults() {
         this.results = {
             current: document.querySelector('#results .current'),
@@ -70,42 +77,9 @@ export default class Game {
         Object.values(this.layers).forEach(layer => project.addLayer(layer));
     }
 
-
-    //TODO: move to level
     async loadLevel(svgSource) {
-        let svg = await Util.loadSvg(svgSource);
-        let vertices = [];
-
-        svg.querySelectorAll('path.track').forEach(path => {
-            let points = Util.pathToPoints(path, this.SVG_PRECISION);
-            vertices = vertices.concat(Vertex.fromPoints(points));
-        });
-
-        this.level = new Level();
-        this.level.vertices = vertices;
-        this.level.updateImage(svg);
-
-        // start points for each player
-        svg.querySelectorAll('metadata > start').forEach(startPoint => {
-            this.level.startPoints.push({
-                x: parseInt(startPoint.getAttribute('x')),
-                y: parseInt(startPoint.getAttribute('y')),
-                angle: parseInt(startPoint.getAttribute('a')),
-                speed: parseInt(startPoint.getAttribute('s')) // unused for now
-            });
-        });
-
-        // start line for time measuring
-        let startLinePath = svg.querySelector('path.startline');
-        if (startLinePath) {
-            let start = startLinePath.getPointAtLength(0);
-            let end = startLinePath.getPointAtLength(startLinePath.getTotalLength());
-            this.level.startLine = new Vertex(start, end);
-        }
-
-        let background = svg.querySelector('.background').style.fill;
-
-        return background;
+        this.level = await Level.load(svgSource);
+        return this.level.background;
     }
 
     async start() {

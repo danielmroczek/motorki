@@ -39,13 +39,10 @@ export default {
         return result;
     },
 
-    pathToPoints(path, tolerance, minDistance) {
+    pathToPoints(path, tolerance = 1.005, minDistance = 5) {
         if (!path) {
             return [];
         }
-
-        tolerance = tolerance || 1.005;
-        minDistance = minDistance || 5;
 
         let getSegmentData = function (path) {
             let segList = path.pathSegList;
@@ -124,7 +121,7 @@ export default {
     /**
      * Return a shuffled version of an array. Doesn't change original array.
      * 
-     * @param {Array} param0 
+     * @param {Array} arr An array to shuffle
      * @returns {Array} Shuffled Array
      */
     shuffle([...arr]) {
@@ -140,6 +137,13 @@ export default {
         return Math.sign(d);
     },
 
+    /**
+     * @async
+     * Loads provided uri as svg document.
+     * 
+     * @param {String} svgSource uri for svg
+     * @returns {Document} svg as document
+     */
     async loadSvg(svgSource) {
         let svgText = await (await fetch(svgSource)).text();
         return new DOMParser().parseFromString(svgText, "image/svg+xml");
