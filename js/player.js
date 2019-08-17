@@ -1,6 +1,6 @@
+import EventEmitter from './eventEmitter.js';
 import Util from './util.js';
 import Vertex from './vertex.js';
-import EventEmitter from './eventEmitter.js';
 
 export default class Player extends EventEmitter{
     constructor(color, layers) {
@@ -15,17 +15,31 @@ export default class Player extends EventEmitter{
         };
         this.height = 20;
         this.width = 7;
-    
+
+        this.PHYSICS_TYPE = {
+            FAST: {
+                anglespeedAccel: 1.5,
+                anglespeedMinMax: 5,
+                anglespeedBrake: 5,
+                maxSpeed: 20,
+                minSpeed: 2,
+                acceleration: 0.8
+            },
+            SLOW: {
+                anglespeedAccel: 1.5,
+                anglespeedMinMax: 6,
+                anglespeedBrake: 7,
+                maxSpeed: 20,
+                minSpeed: 2,
+                acceleration: 0.6
+            }
+        }
+
+        this.physics = this.PHYSICS_TYPE.SLOW;
         this.angle = 90;
         this.anglespeed = 0;
-        this.anglespeedAccel = 1.5;
-        this.anglespeedMinMax = 5;
-        this.anglespeedBrake = 5;
-    
-        this.maxSpeed = 20;
-        this.minSpeed = 2;
-        this.speed = this.minSpeed;
-        this.acceleration = 0.8;
+        this.speed = this.physics.minSpeed;
+
     
         this.verbose = false;
         this.vertices = [];
@@ -113,25 +127,25 @@ export default class Player extends EventEmitter{
                 // steering
                 if (this.controls["left"] === this.controls["right"]) {
                     let sign = Math.sign(this.anglespeed);
-                    this.anglespeed -= sign * this.anglespeedAccel * (timediff / 30);
+                    this.anglespeed -= sign * this.physics.anglespeedAccel * (timediff / 30);
                     if (sign !== Math.sign(this.anglespeed)) {
                         this.anglespeed = 0;
                     }
                 } else if (this.controls["left"]) {
-                    this.anglespeed -= this.anglespeedAccel * (timediff / 30);
+                    this.anglespeed -= this.physics.anglespeedAccel * (timediff / 30);
                 } else if (this.controls["right"]) {
-                    this.anglespeed += this.anglespeedAccel * (timediff / 30);
+                    this.anglespeed += this.physics.anglespeedAccel * (timediff / 30);
                 }
 
                 this.angle += this.anglespeed * (timediff / 30);
 
-                this.anglespeed = Math.min(this.anglespeed, this.anglespeedMinMax);
-                this.anglespeed = Math.max(this.anglespeed, -this.anglespeedMinMax);
+                this.anglespeed = Math.min(this.anglespeed, this.physics.anglespeedMinMax);
+                this.anglespeed = Math.max(this.anglespeed, -this.physics.anglespeedMinMax);
             }
 
-            this.speed += this.acceleration - (Math.abs(this.anglespeed) / this.anglespeedBrake);
-            this.speed = Math.min(this.speed, this.maxSpeed);
-            this.speed = Math.max(this.speed, this.minSpeed);
+            this.speed += this.physics.acceleration - (Math.abs(this.anglespeed) / this.physics.anglespeedBrake);
+            this.speed = Math.min(this.speed, this.physics.maxSpeed);
+            this.speed = Math.max(this.speed, this.physics.minSpeed);
 
             let dx = Math.sin(this.angle * (Math.PI / 180));
             let dy = -Math.cos(this.angle * (Math.PI / 180));
@@ -171,7 +185,7 @@ export default class Player extends EventEmitter{
         this.body.position = new Point(this.position);
         this.body.rotation = this.angle + this.speed * this.anglespeed;
   
-        this.wheels.front.rotation = (-this.speed + this.maxSpeed / 3) * this.anglespeed;
+        this.wheels.front.rotation = (-this.speed + this.physics.maxSpeed / 3) * this.anglespeed;
 
         if (this.debugBody) {
             this.debugBody.position = new Point(this.position);
@@ -268,7 +282,7 @@ export default class Player extends EventEmitter{
         // What to do?
 
         this.position = this.lastPosition;
-        this.speed /= 3;
+        this.speed = this.physics.minSpeed;
 
         let collisionAngle = (Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90;
         this.angle = -this.angle + 2 * (collisionAngle);
