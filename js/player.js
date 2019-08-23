@@ -121,7 +121,9 @@ export default class Player extends EventEmitter{
 
     move(timediff) {
         if (this.started) {
+            // while (this.angle < 0) this.angle += 360;
             this.angle %= 360;
+            // if (this.angle > 180) this.angle -= 360;
 
             if (!this.inCollision) {
                 // steering
@@ -141,6 +143,8 @@ export default class Player extends EventEmitter{
 
                 this.anglespeed = Math.min(this.anglespeed, this.physics.anglespeedMinMax);
                 this.anglespeed = Math.max(this.anglespeed, -this.physics.anglespeedMinMax);
+            } else {
+                this.angle += this.anglespeed;
             }
 
             this.speed += this.physics.acceleration - (Math.abs(this.anglespeed) / this.physics.anglespeedBrake);
@@ -284,9 +288,33 @@ export default class Player extends EventEmitter{
         this.position = this.lastPosition;
         this.speed = this.physics.minSpeed;
 
-        let collisionAngle = (Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90;
-        this.angle = -this.angle + 2 * (collisionAngle);
+        let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
+        while (collisionAngle < 0) collisionAngle += 180;
+        //let dstAngle = (-this.angle % 180 + 2 * (collisionAngle)) % 360;
+        //while (dstAngle < 0) dstAngle += 180;
+        let angle = this.angle % 180;
+        while (angle < 0) angle += 180;
+        
+        //this.angle = dstAngle;
+        //let angleCondition = Math.abs(dstAngle - this.agle) > 180 ? -1 : 1;
+        if (collisionAngle - 90 < angle && angle < collisionAngle) {
+            this.anglespeed = this.physics.anglespeedMinMax;
+        } else if (collisionAngle + 90 < angle) {
+            this.anglespeed = this.physics.anglespeedMinMax;
+        } else {
+            this.anglespeed = -this.physics.anglespeedMinMax;
+        }
+        // this.anglespeed =  1 * Math.sign(dstAngle - this.angle % 180) * this.physics.anglespeedMinMax;
+        // console.log({collisionAngle, angle: this.angle, dstAngle});
+        if (this.anglespeed < 0) {
+            console.log({collisionAngle, angle});
+        }
 
+        // if (collisionAngle - this.angle > 0) {
+        //     this.anglespeed = -this.physics.anglespeedMinMax;
+        // } else {
+        //     this.anglespeed = this.physics.anglespeedMinMax;
+        // }
     };
 
     dispose() {
