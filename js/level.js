@@ -88,6 +88,7 @@ export default class Level {
         body.vertices.some(bodyVertex => {
             this.vertices.some(levelVertex => {
                 if (levelVertex.collide(bodyVertex)) {
+                    body.revertPosition();
                     if (!body.inCollision) {
                         body.onCollide(levelVertex);
                         body.inCollision = true;

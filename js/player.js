@@ -78,6 +78,10 @@ export default class Player extends EventEmitter{
                 y: this.height / 2
             }
         ];
+        this.frontVertex = {
+            x: 0,
+            y: -this.height / 2
+        }
     
         this.layers = layers;
         this.skidmark = new Path({
@@ -121,9 +125,7 @@ export default class Player extends EventEmitter{
 
     move(timediff) {
         if (this.started) {
-            // while (this.angle < 0) this.angle += 360;
             this.angle %= 360;
-            // if (this.angle > 180) this.angle -= 360;
 
             if (!this.inCollision) {
                 // steering
@@ -174,15 +176,20 @@ export default class Player extends EventEmitter{
 
     updateVertices() {
         let points = [];
-        this.defaultVertices.forEach(p => {
-            points.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
-        });
+        this.oldFrontVertex = this.newFrontVertex;
+        this.newFrontVertex = Util.movePoint(Util.rotatePoint(this.frontVertex, this.angle), this.position);
 
-        points.push(points[0]);
-        let newVertices = Vertex.fromPoints(points);
+        points.push(this.newFrontVertex);
 
-        // using vertices in correct order - front, right, left, back
-        this.vertices = [newVertices[0], newVertices[1], newVertices[3], newVertices[2]];
+        if (this.oldFrontVertex) {
+            points.push(this.oldFrontVertex);
+        } else {
+            points.push(this.newFrontVertex);
+        }
+
+
+        this.vertices = Vertex.fromPoints(points);
+        
     }
 
     draw(e) {
@@ -285,18 +292,14 @@ export default class Player extends EventEmitter{
     onCollide(vertex) {
         // What to do?
 
-        this.position = this.lastPosition;
+        console.log({lapTime: this.lapTime, angle: this.angle, anglespeed: this.anglespeed});
         this.speed = this.physics.minSpeed;
 
         let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
         while (collisionAngle < 0) collisionAngle += 180;
-        //let dstAngle = (-this.angle % 180 + 2 * (collisionAngle)) % 360;
-        //while (dstAngle < 0) dstAngle += 180;
         let angle = this.angle % 180;
         while (angle < 0) angle += 180;
         
-        //this.angle = dstAngle;
-        //let angleCondition = Math.abs(dstAngle - this.agle) > 180 ? -1 : 1;
         if (collisionAngle - 90 < angle && angle < collisionAngle) {
             this.anglespeed = this.physics.anglespeedMinMax;
         } else if (collisionAngle + 90 < angle) {
@@ -316,6 +319,12 @@ export default class Player extends EventEmitter{
         //     this.anglespeed = this.physics.anglespeedMinMax;
         // }
     };
+
+    revertPosition() {
+        // console.dir(this);
+        this.position = this.lastPosition;
+        this.newFrontVertex = this.oldFrontVertex;
+    }
 
     dispose() {
         this.body.remove();
