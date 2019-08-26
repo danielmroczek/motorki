@@ -281,7 +281,6 @@ export default class Game extends EventEmitter{
     loop() {
         let timestamp = performance.now();
         this.delta += timestamp - this.lastFrameTime;
-        this.lastFrameTime = timestamp;
 
         while (this.delta >= this.timestep) {
             this.tick(this.timestep);
@@ -292,6 +291,9 @@ export default class Game extends EventEmitter{
             clearInterval(this.loopId);
             this.stopped();
         }
+
+        // TODO: subject to change, maybe should be calculated at the beginning?
+        this.lastFrameTime = performance.now();
     }
 
     tick(timediff) {
