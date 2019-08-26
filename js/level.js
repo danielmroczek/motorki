@@ -46,7 +46,7 @@ export default class Level {
 
         this.background = svg.querySelector('.background').style.fill;
     }
-    
+
     /**
      * Builder like method.
      * 
@@ -86,17 +86,23 @@ export default class Level {
         let result = false;
 
         body.vertices.some(bodyVertex => {
-            this.vertices.some(levelVertex => {
+
+            let collisions = [];
+            this.vertices.forEach(levelVertex => {
                 if (levelVertex.collide(bodyVertex)) {
-                    body.revertPosition();
-                    if (!body.inCollision) {
-                        body.onCollide(levelVertex);
-                        body.inCollision = true;
-                    }
-                    result = true;
+                    collisions.push(levelVertex);
                 }
-                return result;
             });
+
+            if (collisions.length) {
+                body.revertPosition();
+                if (!body.inCollision) {
+                    body.onCollide(collisions);
+                    body.inCollision = true;
+                }
+                result = true;
+            }
+
             return result
         });
         if (!result) {

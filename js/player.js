@@ -82,7 +82,7 @@ export default class Player extends EventEmitter{
             x: 0,
             y: -this.height / 2
         }
-    
+
         this.layers = layers;
         this.skidmark = new Path({
             strokeColor: new Color(0, 0, 0, 0.75),
@@ -146,6 +146,7 @@ export default class Player extends EventEmitter{
                 this.anglespeed = Math.min(this.anglespeed, this.physics.anglespeedMinMax);
                 this.anglespeed = Math.max(this.anglespeed, -this.physics.anglespeedMinMax);
             } else {
+                console.log({lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
                 this.angle += this.anglespeed;
             }
 
@@ -186,7 +187,6 @@ export default class Player extends EventEmitter{
         } else {
             points.push(this.newFrontVertex);
         }
-
 
         this.vertices = Vertex.fromPoints(points);
         
@@ -289,11 +289,14 @@ export default class Player extends EventEmitter{
         this.controls[s] = 1;
     };
 
-    onCollide(vertex) {
+    onCollide(collisions) {
         // What to do?
+        let vertex = collisions[0];
+        if (collisions.length > 1) {
+            
+        }
 
-        console.log({lapTime: this.lapTime, angle: this.angle, anglespeed: this.anglespeed});
-        this.speed = this.physics.minSpeed;
+        this.speed /= 3; //this.physics.minSpeed;
 
         let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
         while (collisionAngle < 0) collisionAngle += 180;
@@ -307,17 +310,12 @@ export default class Player extends EventEmitter{
         } else {
             this.anglespeed = -this.physics.anglespeedMinMax;
         }
-        // this.anglespeed =  1 * Math.sign(dstAngle - this.angle % 180) * this.physics.anglespeedMinMax;
-        // console.log({collisionAngle, angle: this.angle, dstAngle});
-        if (this.anglespeed < 0) {
-            console.log({collisionAngle, angle});
-        }
 
-        // if (collisionAngle - this.angle > 0) {
-        //     this.anglespeed = -this.physics.anglespeedMinMax;
-        // } else {
-        //     this.anglespeed = this.physics.anglespeedMinMax;
-        // }
+        console.log({collisionAngle, angle, lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
+
+        if (this.anglespeed < 0) {
+            console.log("left!");
+        }
     };
 
     revertPosition() {
