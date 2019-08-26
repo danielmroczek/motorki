@@ -41,7 +41,7 @@ export default class Player extends EventEmitter{
         this.speed = this.physics.minSpeed;
 
     
-        this.verbose = true;
+        this.verbose = false;
         this.vertices = [];
         this.cheat = false;
     
@@ -219,7 +219,9 @@ export default class Player extends EventEmitter{
             return;
         }
 
-        this.drawSkidmarks();
+        if (!this.body.inCollision) {
+            this.drawSkidmarks();
+        }
     };
 
     drawSkidmarks() {
