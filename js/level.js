@@ -95,7 +95,6 @@ export default class Level {
             });
 
             if (collisions.length) {
-                body.revertPosition();
                 if (!body.inCollision) {
                     body.onCollide(collisions);
                     body.inCollision = true;

@@ -41,7 +41,7 @@ export default class Player extends EventEmitter{
         this.speed = this.physics.minSpeed;
 
     
-        this.verbose = false;
+        this.verbose = true;
         this.vertices = [];
         this.cheat = false;
     
@@ -97,10 +97,11 @@ export default class Player extends EventEmitter{
         this.layers.skidmarks.addChild(this.skidmarkRasterGroup);
 
         if (this.verbose) {
-            this.debugBody = new Path.Circle({
-                center: this.position,
-                radius: 5,
-                fillColor: this.colors.debug
+            this.debugBody = new Path.Line({
+                from: this.frontVertex,
+                to: this.frontVertex,
+                strokeWidth: 5,
+                strokeColor: 'pink'
             });
     
             this.debugBody.applyMatrix = false;
@@ -121,6 +122,11 @@ export default class Player extends EventEmitter{
 
         this.layers.players.addChild(this.body);
         this.body.applyMatrix = false;
+
+        if (this.verbose) {
+            this.layers.players.addChild(this.debugBody);
+        }
+        
     }
 
     move(timediff) {
@@ -145,8 +151,10 @@ export default class Player extends EventEmitter{
 
                 this.anglespeed = Math.min(this.anglespeed, this.physics.anglespeedMinMax);
                 this.anglespeed = Math.max(this.anglespeed, -this.physics.anglespeedMinMax);
+
+                this.lastPosition = this.position;
             } else {
-                console.log({lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
+                this.revertPosition();
                 this.angle += this.anglespeed;
             }
 
@@ -159,20 +167,21 @@ export default class Player extends EventEmitter{
 
             //add power to velocity to get new point
 
-            this.lastPosition = this.position;
             this.position = {
                 x: this.position.x + dx * this.speed * (timediff / 30),
                 y: this.position.y + dy * this.speed * (timediff / 30)
             };
 
-            //console.log(this.speed);
             this.updateVertices();
         }
 
         if (this.startedLap) {
             this.lapTime += timediff;
         }
-        //console.log(this.angle);
+
+        if (this.inCollision) {
+            console.log({lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
+        }
     }
 
     updateVertices() {
@@ -199,7 +208,9 @@ export default class Player extends EventEmitter{
         this.wheels.front.rotation = (-this.speed + this.physics.maxSpeed / 3) * this.anglespeed;
 
         if (this.debugBody) {
-            this.debugBody.position = new Point(this.position);
+            this.debugBody.segments[0].point = new Point(this.oldFrontVertex);
+            this.debugBody.segments[1].point = new Point(this.newFrontVertex);
+            // this.debugBody.position = new Point(this.newFrontVertex);
         }
 
         if (!this.lastPosition ||
@@ -319,12 +330,12 @@ export default class Player extends EventEmitter{
     };
 
     revertPosition() {
-        // console.dir(this);
         this.position = this.lastPosition;
         this.newFrontVertex = this.oldFrontVertex;
     }
 
     dispose() {
         this.body.remove();
+        this.debugBody ? this.debugBody.remove() : false;
     };
 }
