@@ -83,37 +83,21 @@ export default class Level {
     };
 
     collide(body) {
-        let result = false;
-
-        body.vertices.some(bodyVertex => {
-
-            let collisions = [];
-            this.vertices.forEach(levelVertex => {
-                if (levelVertex.collide(bodyVertex)) {
-                    collisions.push(levelVertex);
-                }
-            });
-
-            if (collisions.length) {
-                if (!body.inCollision) {
-                    body.onCollide(collisions);
-                    body.inCollision = true;
-                }
-                result = true;
+        let collisions = [];
+        this.vertices.forEach(levelVertex => {
+            if (levelVertex.collide(body.moveVector)) {
+                collisions.push(levelVertex);
             }
-
-            return result
         });
-        if (!result) {
-            body.inCollision = false;
-        }
-    };
 
-    // TODO: delete method
-    updateImage(svg) {
-        this.img = project.importSVG(svg, {
-            insert: false
-        });
+        if (collisions.length) {
+            if (!body.inCollision) {
+                body.onCollide(collisions);
+            }
+            return true;
+        } 
+
+        return false;
     };
 
     dispose() {

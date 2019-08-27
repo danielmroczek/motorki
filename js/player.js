@@ -40,9 +40,8 @@ export default class Player extends EventEmitter{
         this.anglespeed = 0;
         this.speed = this.physics.minSpeed;
 
-    
         this.verbose = false;
-        this.vertices = [];
+        this.moveVector = [];
         this.cheat = false;
     
         this.color = color;
@@ -63,7 +62,7 @@ export default class Player extends EventEmitter{
         // if player has crossed start line for the first time
         this.startedLap = false;
 
-        this.defaultVertices = [
+        this.normalizedBodyVertices = [
             {
                 x: -this.width / 2,
                 y: -this.height / 2
@@ -97,14 +96,20 @@ export default class Player extends EventEmitter{
         this.layers.skidmarks.addChild(this.skidmarkRasterGroup);
 
         if (this.verbose) {
-            this.debugBody = new Path.Line({
+            this.debugVector = new Path.Line({
                 from: this.frontVertex,
                 to: this.frontVertex,
                 strokeWidth: 5,
                 strokeColor: 'pink'
             });
+
+            this.debugBody = new Path({
+                segments: this.normalizedBodyVertices,
+                strokeWidth: 4,
+                strokeColor: 'purple',
+                closed: true
+            });
     
-            this.debugBody.applyMatrix = false;
         }
     }
 
@@ -124,6 +129,7 @@ export default class Player extends EventEmitter{
         this.body.applyMatrix = false;
 
         if (this.verbose) {
+            this.layers.players.addChild(this.debugVector);
             this.layers.players.addChild(this.debugBody);
         }
         
@@ -178,26 +184,24 @@ export default class Player extends EventEmitter{
         if (this.startedLap) {
             this.lapTime += timediff;
         }
-
-        if (this.inCollision) {
-            console.log({lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
-        }
     }
 
     updateVertices() {
-        let points = [];
+        // moveVector
         this.oldFrontVertex = this.newFrontVertex;
         this.newFrontVertex = Util.movePoint(Util.rotatePoint(this.frontVertex, this.angle), this.position);
+        this.moveVector = new Vertex(this.oldFrontVertex ? this.oldFrontVertex : this.newFrontVertex, 
+            this.newFrontVertex);
 
-        points.push(this.newFrontVertex);
+        // bodyVector
+        this.bodyPoints = [];
+        this.normalizedBodyVertices.forEach(p => {
+            this.bodyPoints.push(Util.movePoint(Util.rotatePoint(p, this.angle), this.position));
+        });
 
-        if (this.oldFrontVertex) {
-            points.push(this.oldFrontVertex);
-        } else {
-            points.push(this.newFrontVertex);
-        }
+        this.bodyPoints.push(this.bodyPoints[0]); // close the loop
 
-        this.vertices = Vertex.fromPoints(points);
+        this.bodyVector = Vertex.fromPoints(this.bodyPoints)
         
     }
 
@@ -207,10 +211,13 @@ export default class Player extends EventEmitter{
   
         this.wheels.front.rotation = (-this.speed + this.physics.maxSpeed / 3) * this.anglespeed;
 
-        if (this.debugBody) {
-            this.debugBody.segments[0].point = new Point(this.oldFrontVertex);
-            this.debugBody.segments[1].point = new Point(this.newFrontVertex);
-            // this.debugBody.position = new Point(this.newFrontVertex);
+        if (this.verbose) {
+            this.debugVector.segments[0].point = new Point(this.oldFrontVertex);
+            this.debugVector.segments[1].point = new Point(this.newFrontVertex);
+
+            for (let i = 0; i < this.bodyVector.length; i += 1) {
+                this.debugBody.segments[i].point = new Point(this.bodyVector[i].p1);
+            }
         }
 
         if (!this.lastPosition ||
@@ -303,7 +310,10 @@ export default class Player extends EventEmitter{
     };
 
     onCollide(collisions) {
+        this.inCollision = true;
+
         this.speed /= 2; // slow it a bit
+        this.speed = Math.max(this.speed, this.physics.minSpeed);
 
         let vertex = collisions[0];
         let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90);
@@ -329,6 +339,9 @@ export default class Player extends EventEmitter{
 
     dispose() {
         this.body.remove();
-        this.debugBody ? this.debugBody.remove() : false;
+        if (this.verbose) {
+            this.debugVector.remove();
+            this.debugBody.remove();
+        }
     };
 }

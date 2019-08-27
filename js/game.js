@@ -4,7 +4,7 @@ import Player from './player.js';
 import Util from './util.js';
 import EventEmitter from './eventEmitter.js';
 
-export default class Game extends EventEmitter{
+export default class Game extends EventEmitter {
 
     constructor() {
         super();
@@ -127,6 +127,7 @@ export default class Game extends EventEmitter{
                 y: startPoint.y,
             };
             player.angle = startPoint.angle;
+            player.updateVertices();
 
             this.players.push(player);
         };
@@ -299,10 +300,40 @@ export default class Game extends EventEmitter{
     tick(timediff) {
         this.players.forEach(player => {
             player.move(timediff);
-            //collideBodies(player);
-            this.level.collide(player);
+
+            if(!this.collidePlayers(player)) {
+                if(!this.level.collide(player)) {
+                    player.inCollision = false;
+                }
+            }
+
             player.checkLap(this.level.startLine);
         });
+    }
+
+    collidePlayers(p1) {
+        let result = false;
+        this.players.some(p2 => {
+            // continue when dealing with the same player
+            if (p1 === p2) return false;
+            
+            p2.bodyVector.some(p2vector => {
+                if (p2vector.collide(p1.moveVector)) {
+                    if (!p1.inCollision) {
+                        p1.onCollide([p2vector]);           
+                    }
+                    
+                    // dont check other vectors of p2, already having collision
+                    result = true;
+                    return result;
+                }
+            }) 
+
+            // dont check other players vectors, already having collision
+            return result;
+        })
+
+        return result;
     }
 
     drawLoop(e) {
