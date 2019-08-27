@@ -313,7 +313,9 @@ export default class Player extends EventEmitter{
 
         let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
         while (collisionAngle < 0) collisionAngle += 180;
-        let angle = this.angle % 180;
+        
+        vertex = new Vertex(this.oldFrontVertex, this.newFrontVertex);
+        let angle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
         while (angle < 0) angle += 180;
         
         if (collisionAngle - 90 < angle && angle < collisionAngle) {
