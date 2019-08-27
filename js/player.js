@@ -131,7 +131,7 @@ export default class Player extends EventEmitter{
 
     move(timediff) {
         if (this.started) {
-            this.angle %= 360;
+            this.angle = Util.normalizeAngle(this.angle);
 
             if (!this.inCollision) {
                 // steering
@@ -303,33 +303,22 @@ export default class Player extends EventEmitter{
     };
 
     onCollide(collisions) {
-        // What to do?
+        this.speed /= 2; // slow it a bit
+
         let vertex = collisions[0];
-        if (collisions.length > 1) {
-            
-        }
-
-        this.speed /= 3; //this.physics.minSpeed;
-
-        let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
-        while (collisionAngle < 0) collisionAngle += 180;
+        let collisionAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90);
+        collisionAngle = Util.normalizeAngle(collisionAngle, 180);
         
         vertex = new Vertex(this.oldFrontVertex, this.newFrontVertex);
-        let angle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90) % 180;
-        while (angle < 0) angle += 180;
+        let playerAngle = ((Math.atan2(vertex.p1.y - vertex.p2.y, vertex.p1.x - vertex.p2.x) * 180 / Math.PI) - 90)
+        playerAngle = Util.normalizeAngle(playerAngle, 180);
         
-        if (collisionAngle - 90 < angle && angle < collisionAngle) {
+        if (collisionAngle - 90 < playerAngle && playerAngle < collisionAngle) {
             this.anglespeed = this.physics.anglespeedMinMax;
-        } else if (collisionAngle + 90 < angle) {
+        } else if (collisionAngle + 90 < playerAngle) {
             this.anglespeed = this.physics.anglespeedMinMax;
         } else {
             this.anglespeed = -this.physics.anglespeedMinMax;
-        }
-
-        console.log({collisionAngle, angle, lapTime: this.lapTime, angleSrc: this.angle, anglespeed: this.anglespeed});
-
-        if (this.anglespeed < 0) {
-            console.log("left!");
         }
     };
 

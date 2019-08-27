@@ -147,6 +147,15 @@ export default {
     async loadSvg(svgSource) {
         let svgText = await (await fetch(svgSource)).text();
         return new DOMParser().parseFromString(svgText, "image/svg+xml");
+    },
+
+    normalizeAngle(angle, norm = 360) {
+        angle %= norm;
+        if (angle < 0) {
+            angle += norm;
+        }
+
+        return angle;
     }
 
 };
