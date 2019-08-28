@@ -161,10 +161,10 @@ export default class Player extends EventEmitter{
                 this.lastPosition = this.position;
             } else {
                 this.revertPosition();
-                this.angle += this.anglespeed;
+                this.angle += this.anglespeed * (timediff / 30);
             }
 
-            this.speed += this.physics.acceleration - (Math.abs(this.anglespeed) / this.physics.anglespeedBrake);
+            this.speed += this.physics.acceleration * timediff / 16 - (Math.abs(this.anglespeed) / this.physics.anglespeedBrake * timediff / 16);
             this.speed = Math.min(this.speed, this.physics.maxSpeed);
             this.speed = Math.max(this.speed, this.physics.minSpeed);
 
@@ -306,7 +306,10 @@ export default class Player extends EventEmitter{
     };
 
     steerOn(s) {
-        this.controls[s] = 1;
+        if (s) {
+            this.controls[s] = 1;
+            this.started = true;
+        }
     };
 
     onCollide(collisions) {

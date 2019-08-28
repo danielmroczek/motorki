@@ -89,11 +89,10 @@ export default class Game extends EventEmitter {
         await this.setupPlayers();
 
         this.onResize();
-
         this.addHooks();
 
         this.lastFrameTime = performance.now();
-        this.loopId = setInterval(e => this.loop(e), this.timestep);
+        requestAnimationFrame(e => this.loop(e));
     }
 
     setupLayers() {
@@ -210,20 +209,6 @@ export default class Game extends EventEmitter {
                 this.restart();
                 return;
         }
-
-        switch (e.key) {
-            case "ArrowLeft":
-            case "ArrowRight":
-                this.players[0].started = true;
-                break;
-
-            case "A":
-            case "a":
-            case "S":
-            case "s":
-                this.players[1].started = true;
-                break;
-        }
     }
 
     onKeyup(e) {
@@ -289,8 +274,9 @@ export default class Game extends EventEmitter {
         }
 
         if (this.stopped) {
-            clearInterval(this.loopId);
             this.stopped();
+        } else {
+            requestAnimationFrame(e => this.loop(e));// request animation frame call next loop
         }
 
         // TODO: subject to change, maybe should be calculated at the beginning?
