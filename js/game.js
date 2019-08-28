@@ -45,10 +45,12 @@ export default class Game extends EventEmitter {
     initPaper() {
         let canvas = document.getElementById(this.CANVAS_ID);
         paper.setup(canvas);
+        this.onResize();
 
         view.on('frame', e => this.drawLoop(e));
         view.on('resize', e => this.onResize(e));
         view.draw();
+        
     }
 
     // TODO: move somewhere
@@ -88,7 +90,6 @@ export default class Game extends EventEmitter {
         this.setupLayers();
         await this.setupPlayers();
 
-        this.onResize();
         this.addHooks();
 
         this.lastFrameTime = performance.now();
@@ -338,6 +339,7 @@ export default class Game extends EventEmitter {
     }
 
     onResize(event) {
+        console.log("O hai!");
         view.setZoom(view.getViewSize().getWidth() / this.WIDTH);
         view.setCenter(this.center);
     }

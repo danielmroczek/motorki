@@ -1,22 +1,24 @@
 <!doctype html>
 <html class="no-js" lang="">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title></title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="apple-touch-icon" href="apple-touch-icon.png">
-        <link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono" rel="stylesheet">
-        <!-- Place favicon.ico in the root directory -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/main.css">
-    </head>
-    <body>
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono" rel="stylesheet">
+    <!-- Place favicon.ico in the root directory -->
+
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
     <div id="canvasContainer">
-        <canvas id="gc" height="448" width="640" resize></canvas>
+        <canvas id="gc" resize></canvas>
     </div>
 
     <div id="results">
@@ -34,9 +36,10 @@
         </p>
     </div>
 
-    <select id="trackList"/>
-        <script src="https://cdn.rawgit.com/progers/pathseg/a1072a7b/pathseg.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.4/paper-full.js"></script>
-        <script src="js/main.js" type="module"></script>
-    </body>
+    <select id="trackList" />
+    <script src="https://cdn.rawgit.com/progers/pathseg/a1072a7b/pathseg.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.2/paper-full.js"></script>
+    <script src="js/main.js" type="module"></script>
+</body>
+
 </html>
