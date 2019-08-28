@@ -153,16 +153,13 @@ export default class Player extends EventEmitter{
                     this.anglespeed += this.physics.anglespeedAccel * (timediff / 30);
                 }
 
-                this.angle += this.anglespeed * (timediff / 30);
-
                 this.anglespeed = Math.min(this.anglespeed, this.physics.anglespeedMinMax);
                 this.anglespeed = Math.max(this.anglespeed, -this.physics.anglespeedMinMax);
 
                 this.lastPosition = this.position;
-            } else {
-                this.revertPosition();
-                this.angle += this.anglespeed * (timediff / 30);
-            }
+            } 
+
+            this.angle += this.anglespeed * (timediff / 30);
 
             this.speed += this.physics.acceleration * timediff / 16 - (Math.abs(this.anglespeed) / this.physics.anglespeedBrake * timediff / 16);
             this.speed = Math.min(this.speed, this.physics.maxSpeed);

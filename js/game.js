@@ -293,6 +293,10 @@ export default class Game extends EventEmitter {
                 }
             }
 
+            if (player.inCollision) {
+                player.revertPosition();
+            }
+
             player.checkLap(this.level.startLine);
         });
     }
