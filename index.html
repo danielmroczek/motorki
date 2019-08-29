@@ -17,26 +17,42 @@
 </head>
 
 <body>
-    <div id="canvasContainer">
-        <canvas id="gc" resize></canvas>
-    </div>
+    <header class="flex">
+        <div class="logo">
+            <h1>Brum.io</h1>
+        </div>
+    </header>
 
-    <div id="results">
-        <p>
-            <span>current: </span>
-            <span class="current">N/A</span>
-        </p>
-        <p>
-            <span>&nbsp;&nbsp;&nbsp;best: </span>
-            <span class="best">N/A</span>
-        </p>
-        <p>
-            <span>&nbsp;&nbsp;&nbsp;last: </span>
-            <span class="last">N/A</span>
-        </p>
-    </div>
+    <section>
+        <div class="stage flex">
+            <canvas id="gamecanvas"></canvas>
+        </div>
+    </section>
 
-    <select id="trackList" />
+    <footer class="flex footer">
+        <div class="config">
+            <div class="select">
+                <!-- <label for="">Track:</label> -->
+                <select id="trackList" />
+            </div>
+        </div>
+
+        <div id="results" class="hidden"> <!-- TODO: show results -->
+            <p>
+                <span>current: </span>
+                <span class="current">N/A</span>
+            </p>
+            <p>
+                <span>&nbsp;&nbsp;&nbsp;best: </span>
+                <span class="best">N/A</span>
+            </p>
+            <p>
+                <span>&nbsp;&nbsp;&nbsp;last: </span>
+                <span class="last">N/A</span>
+            </p>
+        </div>
+    </footer>
+
     <script src="https://cdn.rawgit.com/progers/pathseg/a1072a7b/pathseg.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.2/paper-full.js"></script>
     <script src="js/main.js" type="module"></script>

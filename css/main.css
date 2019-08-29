@@ -1,17 +1,115 @@
 body {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    display: grid;
+    font-family: 'Lato', sans-serif;
+    color: white;
     overflow: hidden;
-    background: #4CAF50;
 }
 
-canvas {
-    display: block;
-    width: 100vmin;
-    height: 70vmin;
-    margin: 0 auto;
+header {
+    grid-area: header;
+    align-items: stretch !important;
+    background: #212121;
+}
+
+.logo {
+    flex: 1;
+}
+
+header h1 {
+    text-transform: uppercase;
+    font-weight: 900;
+    margin: 0;
+    padding: 1rem;
+    font-size: 1.5rem;
+    color: #76ff03;
+
+}
+
+section {
+    grid-area: main;
+    overflow: hidden;
+    position: relative;
+}
+
+footer {
+    grid-area: footer;
+    flex-direction: inherit;
+    align-items: stretch !important;
+    background: #212121;
+}
+
+div.players {
+    display: flex;
+    flex-direction: inherit;
+    flex: 1;
+}
+
+div.players>div {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    font-size: 5rem;
+    color: rgba(0, 0, 0, 0.87);
+}
+
+div.players div:nth-child(1) {
+    background-color: #FF5722;
+}
+
+div.players div:nth-child(2) {
+    background-color: #2196F3;
+}
+
+div.players div:nth-child(3) {
+    background-color: #FAFAFA;
+}
+
+div.players div:nth-child(4) {
+    background-color: #FFEB3B;
+}
+
+div.config {
+    padding: 1em;
+}
+
+select {
+    background-color: #fff;
+    color: rgba(0, 0, 0, 0.87);
+    cursor: pointer;
+    outline: 0;
+    border: 0;
+    border-radius: .1em;
+}
+
+label {
+    margin-right: .2em;
+}
+
+.flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: inherit;
+}
+
+.stage {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
 }
 
 #results {
     font-family: 'Roboto Mono', monospace;
+    font-variant-numeric: tabular-nums;
     color: #fff;
     z-index: 2;
     background: rgba(0, 0, 0, 0.5);
@@ -34,3 +132,38 @@ canvas {
 .hidden {
     display: none !important;
 }
+
+
+@media screen and (min-aspect-ratio: 640/448) {
+    body {
+        grid-template-columns: max-content auto;
+        grid-template-rows: max-content auto;
+        grid-template-areas:
+            "header main"
+            "footer main";
+        flex-direction: column;
+    }
+
+    .flex.footer {
+        justify-content: flex-end;
+    }
+}
+
+@media screen and (max-aspect-ratio: 640/448) {
+    body {
+        grid-template-rows: max-content auto max-content;
+        grid-template-columns: auto;
+        grid-template-areas:
+            "header"
+            "main"
+            "footer";
+        flex-direction: row;
+    }
+
+    .flex.footer {
+        justify-content: start;
+    }
+}
+
+
+

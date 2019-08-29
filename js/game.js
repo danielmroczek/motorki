@@ -8,12 +8,17 @@ export default class Game extends EventEmitter {
 
     constructor() {
         super();
-        this.SVG_PRECISION = 1.001; // closer to 1 -> better precision
-        this.FPS = 60;
-        this.HEIGHT = 448;
-        this.WIDTH = 640;
-        this.CANVAS_ID = 'gc';
-        this.timestep = 1000 / this.FPS;
+        this.options = Object.freeze({
+            svgPrecision: 1.001,
+            fps: 60,
+            canvasSelector: "#gamecanvas",
+            stage: {
+                width: 640,
+                height: 448
+            },
+        });
+        this.timestep = 1000 / this.options.fps;
+        
         this.playerColors = [
             'red',
             'white',
@@ -23,11 +28,7 @@ export default class Game extends EventEmitter {
 
         this.playersCount = 1;
         this.players = [];
-
-        this.map = new Rectangle(new Point(0, 0), [this.WIDTH, this.HEIGHT]);
-        this.center = this.map.getCenter();
         this.stopped = false;
-
         this.delta = 0;
     }
 
@@ -43,14 +44,34 @@ export default class Game extends EventEmitter {
     }
 
     initPaper() {
-        let canvas = document.getElementById(this.CANVAS_ID);
-        paper.setup(canvas);
-        this.onResize();
+        this.canvas = document.querySelector(this.options.canvasSelector);
+        Object.assign(this.canvas, this.options.stage);
+        paper.setup(this.canvas);
+        this.center = new Rectangle([0, 0], this.options.stage).center;
+        window.addEventListener("resize", e => this.fitStageIntoParentContainer());
 
         view.on('frame', e => this.drawLoop(e));
-        view.on('resize', e => this.onResize(e));
-        view.draw();
-        
+        //view.draw();
+    }
+
+    fitStageIntoParentContainer() {
+        let container = this.canvas.parentElement;
+        // now we need to fit stage into parent
+        let width = container.clientWidth;
+        let height = container.clientHeight;
+
+        let stageWidth = this.options.stage.width;
+        let stageHeight = this.options.stage.height;
+
+        let scale = width / height < stageWidth / stageHeight ? width / stageWidth : height / stageHeight;
+
+        view.viewSize = {
+            width: stageWidth * scale,
+            height: stageHeight * scale
+        }
+
+        view.setCenter(this.center);
+        view.zoom = scale;
     }
 
     // TODO: move somewhere
@@ -63,7 +84,7 @@ export default class Game extends EventEmitter {
 
         this.best = Number.MAX_VALUE;
 
-        Object.values(results).forEach(result => result.textContent = "N/A");
+        Object.values(this.results).forEach(result => result.textContent = "N/A");
     }
 
     initLayers() {
@@ -90,6 +111,7 @@ export default class Game extends EventEmitter {
         this.setupLayers();
         await this.setupPlayers();
 
+        this.fitStageIntoParentContainer();
         this.addHooks();
 
         this.lastFrameTime = performance.now();
@@ -336,12 +358,6 @@ export default class Game extends EventEmitter {
         if (this.players[0] && this.players[0].startedLap) {
             this.results.current.textContent = (this.players[0].lapTime / 1000).toFixed(2);
         }
-    }
-
-    onResize(event) {
-        console.log("O hai!");
-        view.setZoom(view.getViewSize().getWidth() / this.WIDTH);
-        view.setCenter(this.center);
     }
 
     dispose() {
