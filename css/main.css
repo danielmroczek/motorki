@@ -11,71 +11,80 @@ body {
     overflow: hidden;
 }
 
+p {
+    margin: 0;
+}
+
 header {
-    grid-area: header;
     align-items: stretch !important;
+    justify-content: start;
+    grid-area: header;
     background: #212121;
 }
 
 .logo {
-    flex: 1;
+    align-self: center;
 }
 
 header h1 {
-    text-transform: uppercase;
+    font-size: 1.5rem;
     font-weight: 900;
     margin: 0;
     padding: 1rem;
-    font-size: 1.5rem;
+    text-transform: uppercase;
     color: #76ff03;
-
 }
 
 section {
-    grid-area: main;
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
+    align-items: center;
+    grid-area: main;
 }
 
 footer {
-    grid-area: footer;
-    flex-direction: inherit;
     align-items: stretch !important;
+    flex-direction: inherit;
+    justify-content: space-between;
+    grid-area: footer;
     background: #212121;
 }
 
-div.players {
+div.results {
+    font-family: 'Inconsolata', monospace;
     display: flex;
     flex-direction: inherit;
-    flex: 1;
+    justify-content: flex-end;
 }
 
-div.players>div {
+div.results>div {
     display: flex;
-    flex: 1;
-    justify-content: center;
     align-items: center;
-    font-size: 5rem;
-    color: rgba(0, 0, 0, 0.87);
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: .3em;
 }
 
-div.players div:nth-child(1) {
-    background-color: #FF5722;
+div.results .red {
+    background-color: #ff5722;
 }
 
-div.players div:nth-child(2) {
-    background-color: #2196F3;
+div.results .blue {
+    background-color: #2196f3;
 }
 
-div.players div:nth-child(3) {
-    background-color: #FAFAFA;
+div.results .white {
+    color: rgba(0, 0, 0, .87);
+    background-color: #fafafa;
 }
 
-div.players div:nth-child(4) {
-    background-color: #FFEB3B;
+div.results .yellow {
+    color: rgba(0, 0, 0, .87);
+    background-color: #ffeb3b;
 }
 
 div.config {
+    align-self: center;
     padding: 1em;
 }
 
@@ -94,8 +103,6 @@ label {
 
 .flex {
     display: flex;
-    align-items: center;
-    justify-content: center;
     flex-direction: inherit;
 }
 
@@ -105,6 +112,9 @@ label {
     right: 0;
     bottom: 0;
     left: 0;
+
+    align-items: center;
+    justify-content: center;
 }
 
 #results {
@@ -144,7 +154,7 @@ label {
         flex-direction: column;
     }
 
-    .flex.footer {
+    footer {
         justify-content: flex-end;
     }
 }
@@ -160,10 +170,11 @@ label {
         flex-direction: row;
     }
 
-    .flex.footer {
-        justify-content: start;
+    header {
+        justify-content: space-between;
+    }
+
+    div.results>div {
+        padding: 0.5em;
     }
 }
-
-
-

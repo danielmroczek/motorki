@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link href="https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata:700|Lato:400,700,900&display=swap" rel="stylesheet">
     <!-- Place favicon.ico in the root directory -->
 
     <link rel="stylesheet" href="css/normalize.css">
@@ -33,24 +33,56 @@
         <div class="config">
             <div class="select">
                 <!-- <label for="">Track:</label> -->
-                <select id="trackList" />
+                <select id="trackList"> </select>
             </div>
         </div>
-
-        <div id="results" class="hidden"> <!-- TODO: show results -->
-            <p>
-                <span>current: </span>
-                <span class="current">N/A</span>
-            </p>
-            <p>
-                <span>&nbsp;&nbsp;&nbsp;best: </span>
-                <span class="best">N/A</span>
-            </p>
-            <p>
-                <span>&nbsp;&nbsp;&nbsp;last: </span>
-                <span class="last">N/A</span>
-            </p>
+        <div class="results">
+            <div class="red hidden">
+                <p>
+                    this: <span class="current"></span>
+                </p>
+                <p>
+                    best: <span class="best"></span>
+                </p>
+                <p>
+                    last: <span class="last"></span>
+                </p>
+            </div>
+            <div class="blue hidden">
+                <p>
+                    this: <span class="current"></span>
+                </p>
+                <p>
+                    best: <span class="best"></span>
+                </p>
+                <p>
+                    last: <span class="last"></span>
+                </p>
+            </div>
+            <div class="white hidden">
+                <p>
+                    this: <span class="current"></span>
+                </p>
+                <p>
+                    best: <span class="best"></span>
+                </p>
+                <p>
+                    last: <span class="last"></span>
+                </p>
+            </div>
+            <div class="yellow  hidden">
+                <p>
+                    this: <span class="current"></span>
+                </p>
+                <p>
+                    best: <span class="best"></span>
+                </p>
+                <p>
+                    last: <span class="last"></span>
+                </p>
+            </div>
         </div>
+        
     </footer>
 
     <script src="https://cdn.rawgit.com/progers/pathseg/a1072a7b/pathseg.js"></script>

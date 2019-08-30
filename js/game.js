@@ -3,6 +3,7 @@ import Level from './level.js';
 import Player from './player.js';
 import Util from './util.js';
 import EventEmitter from './eventEmitter.js';
+import ResultsTable from './resultsTable.js';
 
 export default class Game extends EventEmitter {
 
@@ -40,7 +41,7 @@ export default class Game extends EventEmitter {
     init() {
         this.initPaper();
         this.initLayers();
-        this.initResults();
+        this.resultsTable = new ResultsTable('.results');
     }
 
     initPaper() {
@@ -51,7 +52,6 @@ export default class Game extends EventEmitter {
         window.addEventListener("resize", e => this.fitStageIntoParentContainer());
 
         view.on('frame', e => this.drawLoop(e));
-        //view.draw();
     }
 
     fitStageIntoParentContainer() {
@@ -72,19 +72,6 @@ export default class Game extends EventEmitter {
 
         view.setCenter(this.center);
         view.zoom = scale;
-    }
-
-    // TODO: move somewhere
-    initResults() {
-        this.results = {
-            current: document.querySelector('#results .current'),
-            last: document.querySelector('#results .last'),
-            best: document.querySelector('#results .best')
-        };
-
-        this.best = Number.MAX_VALUE;
-
-        Object.values(this.results).forEach(result => result.textContent = "N/A");
     }
 
     initLayers() {
@@ -130,17 +117,11 @@ export default class Game extends EventEmitter {
         this.players = [];
         let startPoints = Util.shuffle(this.level.startPoints);
         let colors = Util.shuffle(this.playerColors);
+        this.resultsTable.clear();
 
         for (let i = 0; i < this.playersCount; i += 1) {
             let player = new Player(colors.pop(), this.layers);
             await player.init();
-
-            player.addEventListener('lap', data => {
-                this.playerLap(data);
-            });
-            player.addEventListener('lapstarted', data => {
-                this.playerLapStarted(data);
-            });
 
             let startPoint = startPoints.pop();
 
@@ -152,6 +133,7 @@ export default class Game extends EventEmitter {
             player.updateVertices();
 
             this.players.push(player);
+            this.resultsTable.add(player);
         };
     }
 
@@ -259,6 +241,8 @@ export default class Game extends EventEmitter {
     }
 
     touchControl(e) {
+        e.preventDefault();
+
         let touches = Array.prototype.slice.call(e.touches);
         let controls = {
             left: 0,
@@ -283,8 +267,6 @@ export default class Game extends EventEmitter {
         } else {
             this.players[0].steerOn('right');
         }
-
-        this.players[0].started = true;
     }
 
     loop() {
@@ -353,28 +335,9 @@ export default class Game extends EventEmitter {
         this.players.forEach(player => {
             player.draw(e);
         });
-
-        // TODO: change to PlayerLap event
-        if (this.players[0] && this.players[0].startedLap) {
-            this.results.current.textContent = (this.players[0].lapTime / 1000).toFixed(2);
-        }
     }
 
     dispose() {
         this.level.dispose();
-    };
-
-    playerLap(data) {
-        const lapTimeFormatted = (data.time / 1000).toFixed(2);
-        this.results.last.textContent = lapTimeFormatted;
-        if (data.time < this.best) {
-            this.best = data.time;
-            this.results.best.textContent = lapTimeFormatted;
-        }
-        //console.log(`${data.player.color} player has ended lap in ${lapTimeFormatted}`);
-    };
-
-    playerLapStarted(data) {
-        // Nothing to do as for now
     };
 }

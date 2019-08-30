@@ -226,6 +226,10 @@ export default class Player extends EventEmitter{
         if (!this.body.inCollision) {
             this.drawSkidmarks();
         }
+
+        if (this.startedLap) {
+            this.emit('timeupdate', this);
+        }
     };
 
     drawSkidmarks() {
