@@ -232,11 +232,15 @@ export default class Game extends EventEmitter {
                 this.restart();
                 return;
 
-
             case "r":
             case "R":
                 this.restart();
                 return;
+
+            case "p":
+            case "P":
+                this.togglePause();
+                break;
         }
     }
 
@@ -265,10 +269,12 @@ export default class Game extends EventEmitter {
             case "K":
             case "k":
                 this.players[2].steerOff("left");
+                break;
 
             case "L":
             case "l":
                 this.players[2].steerOff("right");
+                break;
         }
     }
 
@@ -302,13 +308,18 @@ export default class Game extends EventEmitter {
     }
 
     loop() {
-        let timestamp = performance.now();
-        this.delta += timestamp - this.lastFrameTime;
+        if (!this.paused) {
+            let timestamp = performance.now();
+            this.delta += timestamp - this.lastFrameTime;
 
-        while (this.delta >= this.timestep) {
-            this.tick(this.timestep);
-            this.delta -= this.timestep;
+            while (this.delta >= this.timestep) {
+                this.tick(this.timestep);
+                this.delta -= this.timestep;
+            }
         }
+
+        // TODO: subject to change, maybe should be calculated at the beginning?
+        this.lastFrameTime = performance.now();
 
         if (this.stopped) {
             this.stopped();
@@ -316,8 +327,18 @@ export default class Game extends EventEmitter {
             requestAnimationFrame(e => this.loop(e));// request animation frame call next loop
         }
 
-        // TODO: subject to change, maybe should be calculated at the beginning?
-        this.lastFrameTime = performance.now();
+    }
+
+    togglePause() {
+        this.paused = !this.paused;
+    }
+
+    pause() {
+        this.paused = true;
+    }
+
+    unpause() {
+        this.paused = false;
     }
 
     tick(timediff) {
