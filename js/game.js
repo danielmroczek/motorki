@@ -19,7 +19,7 @@ export default class Game extends EventEmitter {
             },
         });
         this.timestep = 1000 / this.options.fps;
-        
+
         this.playerColors = [
             'red',
             'white',
@@ -42,6 +42,7 @@ export default class Game extends EventEmitter {
         this.initPaper();
         this.initLayers();
         this.resultsTable = new ResultsTable('.results');
+        window.scrollTo(0, 1); //fake fullscreen
     }
 
     initPaper() {
@@ -148,13 +149,21 @@ export default class Game extends EventEmitter {
         }
 
         for (let [type, listener] of Object.entries(this.eventListeners)) {
-            document.addEventListener(type, listener);
+            if (type.startsWith("touch")) {
+                document.querySelector('div.stage').addEventListener(type, listener)
+            } else {
+                document.addEventListener(type, listener);
+            }
         }
     }
 
     removeHooks() {
         for (let [type, listener] of Object.entries(this.eventListeners)) {
-            document.removeEventListener(type, listener);
+            if (type.startsWith("touch")) {
+                document.querySelector('div.stage').removeEventListener(type, listener)
+            } else {
+                document.removeEventListener(type, listener);
+            }
         }
     }
 
@@ -198,6 +207,16 @@ export default class Game extends EventEmitter {
                 this.players[1].steerOn("right");
                 break;
 
+            case "K":
+            case "k":
+                this.players[2].steerOn("left");
+                break;
+
+            case "L":
+            case "l":
+                this.players[2].steerOn("right");
+                break;
+
             case "1":
                 this.playersCount = 1;
                 this.restart();
@@ -205,6 +224,11 @@ export default class Game extends EventEmitter {
 
             case "2":
                 this.playersCount = 2;
+                this.restart();
+                return;
+
+            case "3":
+                this.playersCount = 3;
                 this.restart();
                 return;
 
@@ -237,6 +261,14 @@ export default class Game extends EventEmitter {
             case "s":
                 this.players[1].steerOff("right");
                 break;
+
+            case "K":
+            case "k":
+                this.players[2].steerOff("left");
+
+            case "L":
+            case "l":
+                this.players[2].steerOff("right");
         }
     }
 
@@ -292,8 +324,8 @@ export default class Game extends EventEmitter {
         this.players.forEach(player => {
             player.move(timediff);
 
-            if(!this.collidePlayers(player)) {
-                if(!this.level.collide(player)) {
+            if (!this.collidePlayers(player)) {
+                if (!this.level.collide(player)) {
                     player.inCollision = false;
                 }
             }
@@ -311,18 +343,18 @@ export default class Game extends EventEmitter {
         this.players.some(p2 => {
             // continue when dealing with the same player
             if (p1 === p2) return false;
-            
+
             p2.bodyVector.some(p2vector => {
                 if (p2vector.collide(p1.moveVector)) {
                     if (!p1.inCollision) {
-                        p1.onCollide([p2vector]);           
+                        p1.onCollide([p2vector]);
                     }
-                    
+
                     // dont check other vectors of p2, already having collision
                     result = true;
                     return result;
                 }
-            }) 
+            })
 
             // dont check other players vectors, already having collision
             return result;
