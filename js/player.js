@@ -116,6 +116,25 @@ export default class Player extends EventEmitter{
     async init() {
         this.svg = await Util.loadSvg(`img/moto-${this.color}.svg`);
 
+        this.height = this.svg.querySelector('svg').getAttribute('height');
+        this.width = this.svg.querySelector('svg').getAttribute('height');
+
+        this.normalizedBodyVertices = [
+            {
+                x: 0,
+                y: -this.height / 2
+            }, {
+                x: this.width / 2,
+                y: 0
+            }, {
+                x: 0,
+                y: this.height / 2
+            }, {
+                x: -this.width / 2,
+                y: 0
+            }
+        ];
+
         this.body = project.importSVG(this.svg, {
             insert: false
         });
