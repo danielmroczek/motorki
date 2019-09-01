@@ -24,14 +24,18 @@ class App {
 
     initTrackSelector() {
         this.trackSelector = new TrackSelector(this);
-        this.trackSelector.init();
         this.trackSelector.addEventListener("change", track => {
-            this.restart(track);
+            // this.restart(track);
+            document.querySelector(".trackpreview").src = 'tracks/' + track + '.svg';
         })
+        this.trackSelector.init();
     }
 
     start() {
-        this.restart(this.trackSelector.getDefaultTrack());
+        //this.restart(this.trackSelector.getDefaultTrack());
+        document.querySelector('button.start').addEventListener('click', e => {
+            this.restart(this.trackSelector.getSelectedTrack());
+        });
     }
 
     async restart(track) {
@@ -49,7 +53,10 @@ class App {
 
         //TODO: Refactor. Reacting to change level event?
         let background = await this.game.loadLevel('tracks/' + track + '.svg');
-        document.body.style.background = background;
+        document.querySelector('.stage').style.background = background;
+
+        document.querySelector('.menu').classList.add('hidden');
+        // document.querySelector('footer').classList.remove('hidden');
         this.game.start();
     }
 }

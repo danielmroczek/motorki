@@ -17,25 +17,35 @@
 </head>
 
 <body>
-    <header class="flex">
+    <header>
         <div class="logo">
             <h1>Brum.io</h1>
         </div>
+
+        <p class="button">
+            Menu
+        </p>
     </header>
 
     <section>
-        <div class="stage flex">
+        <div class="stage">
             <canvas id="gamecanvas"></canvas>
+        </div>
+        <div class="menu">
+            <div class="config">
+                <div class="select">
+                    <!-- <label for="">Track:</label> -->
+                    <select id="trackList"> </select>
+                </div>
+                <img class="trackpreview" src="" alt="">
+            </div>
+
+            <button class="start">Start!</button>
         </div>
     </section>
 
-    <footer class="flex footer">
-        <div class="config">
-            <div class="select">
-                <!-- <label for="">Track:</label> -->
-                <select id="trackList"> </select>
-            </div>
-        </div>
+    <footer>
+        
         <div class="results">
             <div class="red hidden">
                 <p>

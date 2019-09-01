@@ -18,6 +18,7 @@ export default class extends EventEmitter{
     init() {
         this.populateTrackSelector();
         this.addHooks();
+        this.emit("change", this.getDefaultTrack());
     }
 
     populateTrackSelector() { 
@@ -38,5 +39,9 @@ export default class extends EventEmitter{
 
     getDefaultTrack() {
         return this.tracks[0];
+    }
+
+    getSelectedTrack() {
+        return this.selector.options[this.selector.selectedIndex].value;
     }
 }
