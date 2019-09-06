@@ -33,33 +33,13 @@ header {
   grid-area: header;
 }
 
-header .button {
-  text-align: center;
-  background-color: rgba(255, 255, 255, 0.5);
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-}
-
-header h1 {
+header h1.logo {
   font-size: 1.5rem;
   font-weight: 900;
   margin: 0;
   padding: 1rem;
   text-transform: uppercase;
   color: #76ff03;
-}
-
-header .logo {
-  -ms-flex-item-align: center;
-      -ms-grid-row-align: center;
-      align-self: center;
 }
 
 section {
@@ -148,20 +128,11 @@ div.results .yellow {
   background-color: #ffeb3b;
 }
 
-div.config {
-  -ms-flex-item-align: center;
-      -ms-grid-row-align: center;
-      align-self: center;
-  padding: 1em;
-}
-
 select {
-  background-color: #fff;
-  color: rgba(0, 0, 0, 0.87);
+  background-color: #212121;
+  color: white;
   cursor: pointer;
   outline: 0;
-  border: 0;
-  border-radius: .1em;
 }
 
 label {
@@ -196,6 +167,39 @@ div.stage {
   bottom: 0;
   left: 0;
   z-index: 100;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+.menu > div {
+  max-width: 320px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.menu > div > div {
+  padding: 1em;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: stretch;
+      -ms-flex-pack: stretch;
+          justify-content: stretch;
 }
 
 .trackpreview {
@@ -205,6 +209,25 @@ div.stage {
 
 .hidden {
   display: none !important;
+}
+
+button {
+  background-color: transparent;
+  border: 1px solid #32cb00;
+  cursor: pointer;
+  color: #32cb00;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  outline: none;
+}
+
+button:hover {
+  border: 1px solid #76ff03;
+}
+
+button:active {
+  background: #76ff03;
+  color: #212121;
 }
 
 @media screen and (min-aspect-ratio: 640 / 448) {

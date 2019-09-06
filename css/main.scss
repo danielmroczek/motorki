@@ -1,4 +1,7 @@
 $dark-text: rgba(0, 0, 0, .87);
+$light-text: white;
+$accent-color: #76ff03;
+$primary-btn: #32cb00;
 $background: #212121;
 
 @mixin full-size {
@@ -35,15 +38,7 @@ header {
     justify-content: start;
     grid-area: header;
 
-    .button {
-        text-align: center;
-        background-color: rgba(255, 255, 255, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center; 
-    }
-
-    h1 {
+    h1.logo {
         font-size: 1.5rem;
         font-weight: 900;
         margin: 0;
@@ -51,11 +46,6 @@ header {
         text-transform: uppercase;
         color: #76ff03;
     }
-
-    .logo {
-        align-self: center;
-    }
-    
 }
 
 section {
@@ -90,38 +80,33 @@ div.results {
         justify-content: flex-end;
         padding: .3em;
     }
-}
 
-div.results .red {
-    background-color: #ff5722;
-}
-
-div.results .blue {
-    background-color: #2196f3;
-}
-
-div.results .white {
-    color: $dark-text;
-    background-color: #fafafa;
-}
-
-div.results .yellow {
-    color: $dark-text;
-    background-color: #ffeb3b;
-}
-
-div.config {
-    align-self: center;
-    padding: 1em;
+    .red {
+        background-color: #ff5722;
+    }
+    
+    .blue {
+        background-color: #2196f3;
+    }
+    
+    .white {
+        color: $dark-text;
+        background-color: #fafafa;
+    }
+    
+    .yellow {
+        color: $dark-text;
+        background-color: #ffeb3b;
+    }
 }
 
 select {
-    background-color: #fff;
-    color: $dark-text;
+    background-color: $background;
+    color: $light-text;
     cursor: pointer;
     outline: 0;
-    border: 0;
-    border-radius: .1em;
+    // border: 0;
+    // border-radius: .1em;
 }
 
 label {
@@ -139,6 +124,22 @@ div.stage {
 .menu {
     @include full-size;
     z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    & > div {
+        max-width: 320px; 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        & > div {
+            padding: 1em;
+            display: flex;
+            justify-content: stretch;
+        }
+    }
 }
 
 .trackpreview {
@@ -148,6 +149,27 @@ div.stage {
 
 .hidden {
     display: none !important;
+}
+
+button {
+	background-color:transparent;
+	border:1px solid $primary-btn;
+	cursor:pointer;
+	color:$primary-btn;
+
+	padding:1rem 2rem;
+    text-decoration:none;
+    outline: none;
+}
+button:hover {
+    // background-color:transparent;
+    border:1px solid $accent-color;
+}
+button:active {
+	// position:relative;
+    // top:1px;
+    background: $accent-color;
+    color: $background;
 }
 
 

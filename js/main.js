@@ -9,6 +9,11 @@ window.addEventListener('load', () => {
 class App {
     constructor() {
         // Nothing to do
+        if (document.location.hash == '#atwork') {
+            document.querySelector('.logo').style.visibility = 'hidden';
+            document.querySelector('.trackpreview').style.visibility= 'hidden';
+            document.querySelector('.stage').style.visibility= 'hidden';
+        } 
     }
 
     init() {

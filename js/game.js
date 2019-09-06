@@ -1,4 +1,3 @@
-
 import Level from './level.js';
 import Player from './player.js';
 import Util from './util.js';
@@ -6,7 +5,6 @@ import EventEmitter from './eventEmitter.js';
 import ResultsTable from './resultsTable.js';
 
 export default class Game extends EventEmitter {
-
     constructor() {
         super();
         this.options = Object.freeze({
