@@ -27,12 +27,21 @@ header {
     grid-area: header;
 
     a.logo {
+        position: relative;
         font-size: 1.5rem;
         font-weight: 900;
         margin: 0;
         padding: 1rem;
         text-transform: uppercase;
-        color: #76ff03;
+        color: $accent-color;
+
+        small {
+            position: absolute;
+            right: 1rem;
+            bottom: .5rem;
+            font-size: .7rem;
+            color: change-color($accent-color, $alpha: 0.5);
+        }
     }
 }
 
