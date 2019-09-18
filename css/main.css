@@ -1,3 +1,27 @@
+label {
+  cursor: pointer;
+}
+
+input[type="radio"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  height: 1em;
+  width: 1em;
+  border: 0.1em solid white;
+  border-radius: 1em;
+  cursor: pointer;
+  margin: 0.125em;
+  -webkit-transition: 0.2s;
+  transition: 0.2s;
+}
+
+input[type="radio"]:checked {
+  border-width: 0.5em;
+  border-color: #76ff03;
+}
+
 body {
   position: absolute;
   top: 0;
@@ -14,6 +38,10 @@ body {
 
 p {
   margin: 0;
+}
+
+a {
+  text-decoration: none;
 }
 
 header {
@@ -33,7 +61,7 @@ header {
   grid-area: header;
 }
 
-header h1.logo {
+header a.logo {
   font-size: 1.5rem;
   font-weight: 900;
   margin: 0;
@@ -133,6 +161,8 @@ select {
   color: white;
   cursor: pointer;
   outline: 0;
+  padding: .3em;
+  border: 0;
 }
 
 label {
@@ -160,7 +190,7 @@ div.stage {
           justify-content: center;
 }
 
-.menu {
+.menu-container {
   position: absolute;
   top: 0;
   right: 0;
@@ -176,9 +206,10 @@ div.stage {
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
+  font-family: 'Inconsolata', monospace;
 }
 
-.menu > div {
+.menu-container > div.menu {
   max-width: 320px;
   display: -webkit-box;
   display: -ms-flexbox;
@@ -190,16 +221,53 @@ div.stage {
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
+  padding: 1.5em 1em;
+  background: #373737;
 }
 
-.menu > div > div {
-  padding: 1em;
+.menu-container > div.menu > div {
+  margin: .5em 1em;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
-  -webkit-box-pack: stretch;
-      -ms-flex-pack: stretch;
-          justify-content: stretch;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.menu-container > div.menu div.players {
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-item-align: stretch;
+      align-self: stretch;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-pack: distribute;
+      justify-content: space-around;
+}
+
+.menu-container > div.menu .fa-male {
+  margin: 0 -0.1em;
+  font-size: 1.5em;
+}
+
+.menu-container > div.menu button.start {
+  -ms-flex-item-align: stretch;
+      -ms-grid-row-align: stretch;
+      align-self: stretch;
+  margin: .5rem 1rem;
+  font-size: 2em;
+}
+
+.menu-container > div.menu input:checked ~ .checkmark {
+  background-color: #2196F3;
 }
 
 .trackpreview {
@@ -212,22 +280,21 @@ div.stage {
 }
 
 button {
-  background-color: transparent;
-  border: 1px solid #32cb00;
+  background-color: #6ae800;
+  border: 0;
   cursor: pointer;
-  color: #32cb00;
-  padding: 1rem 2rem;
+  color: #212121;
+  padding: .75rem 2rem;
   text-decoration: none;
   outline: none;
 }
 
 button:hover {
-  border: 1px solid #76ff03;
+  background-color: #76ff03;
 }
 
 button:active {
-  background: #76ff03;
-  color: #212121;
+  background-color: #84ff1c;
 }
 
 @media screen and (min-aspect-ratio: 640 / 448) {

@@ -1,0 +1,29 @@
+@import 'common';
+
+label {
+    cursor: pointer;
+  }
+  
+  input[type="radio"] {
+    $size: 1em;
+    
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    outline: none;
+  
+    height: $size;
+    width: $size;
+    border: $size/10 solid $light-text;
+    border-radius: $size;
+    cursor: pointer;
+    margin: $size / 8;
+  
+    transition: 0.2s;
+    
+    &:checked {
+      border-width: $size / 2;
+      border-color: $accent-color;
+    }
+  }
+  

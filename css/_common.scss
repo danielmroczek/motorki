@@ -1,0 +1,18 @@
+$dark-text: rgba(0, 0, 0, .87);
+$light-text: white;
+$accent-color: #76ff03;
+$primary-btn: #32cb00;
+$background: #212121;
+
+@mixin full-size {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+@mixin flex {
+    display: flex;
+    flex-direction: inherit;
+} 

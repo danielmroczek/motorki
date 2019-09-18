@@ -1,21 +1,5 @@
-$dark-text: rgba(0, 0, 0, .87);
-$light-text: white;
-$accent-color: #76ff03;
-$primary-btn: #32cb00;
-$background: #212121;
-
-@mixin full-size {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-}
-
-@mixin flex {
-    display: flex;
-    flex-direction: inherit;
-} 
+@import 'common';
+@import 'radio';
 
 body {
     @include full-size;
@@ -31,6 +15,10 @@ p {
     margin: 0;
 }
 
+a {
+    text-decoration: none;
+}
+
 header {
     @include flex;
 
@@ -38,7 +26,7 @@ header {
     justify-content: start;
     grid-area: header;
 
-    h1.logo {
+    a.logo {
         font-size: 1.5rem;
         font-weight: 900;
         margin: 0;
@@ -105,7 +93,8 @@ select {
     color: $light-text;
     cursor: pointer;
     outline: 0;
-    // border: 0;
+    padding: .3em;
+    border: 0;
     // border-radius: .1em;
 }
 
@@ -121,23 +110,54 @@ div.stage {
     justify-content: center;
 }
 
-.menu {
+.menu-container {
     @include full-size;
     z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Inconsolata', monospace;
 
-    & > div {
+    & > div.menu {
         max-width: 320px; 
         display: flex;
         flex-direction: column;
         align-items: center;
+        padding: 1.5em 1em;
+        background: scale-color($background, $lightness: 10%);
+
+        // border: 1px solid $light-text;
 
         & > div {
-            padding: 1em;
+            margin: .5em 1em;
             display: flex;
-            justify-content: stretch;
+            flex-direction: column;
+            // justify-content: stretch;
+        }
+
+        div.players {
+            flex-direction: row;
+            display: flex;
+            align-self: stretch;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .fa-male {
+            margin: 0 -0.1em;
+            font-size: 1.5em;
+        }
+
+        button.start {
+            
+            align-self: stretch;
+            margin: .5rem 1rem;
+            // margin-top: 1.5rem;
+            font-size: 2em;
+        }
+
+        input:checked ~ .checkmark {
+            background-color: #2196F3;
         }
     }
 }
@@ -152,24 +172,24 @@ div.stage {
 }
 
 button {
-	background-color:transparent;
-	border:1px solid $primary-btn;
+	background-color: scale-color($accent-color, $lightness: -10%);
+	border: 0;
 	cursor:pointer;
-	color:$primary-btn;
+	color:$background;
 
-	padding:1rem 2rem;
+	padding:.75rem 2rem;
     text-decoration:none;
     outline: none;
 }
 button:hover {
     // background-color:transparent;
-    border:1px solid $accent-color;
+    background-color: $accent-color;
+    // border:1px solid $accent-color;
 }
 button:active {
 	// position:relative;
     // top:1px;
-    background: $accent-color;
-    color: $background;
+    background-color: scale-color($accent-color, $lightness: 10%);
 }
 
 

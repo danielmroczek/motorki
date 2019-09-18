@@ -5,9 +5,9 @@ import EventEmitter from './eventEmitter.js';
 import ResultsTable from './resultsTable.js';
 
 export default class Game extends EventEmitter {
-    constructor() {
+    constructor(options) {
         super();
-        this.options = Object.freeze({
+        this.options = Object.assign({
             svgPrecision: 1.001,
             fps: 60,
             canvasSelector: "#gamecanvas",
@@ -15,7 +15,8 @@ export default class Game extends EventEmitter {
                 width: 640,
                 height: 448
             },
-        });
+            playersCount: 1
+        }, options);
         this.timestep = 1000 / this.options.fps;
 
         this.playerColors = [
@@ -25,7 +26,6 @@ export default class Game extends EventEmitter {
             'blue'
         ];
 
-        this.playersCount = 1;
         this.players = [];
         this.stopped = false;
         this.delta = 0;
@@ -118,7 +118,7 @@ export default class Game extends EventEmitter {
         let colors = Util.shuffle(this.playerColors);
         this.resultsTable.clear();
 
-        for (let i = 0; i < this.playersCount; i += 1) {
+        for (let i = 0; i < this.options.playersCount; i += 1) {
             let player = new Player(colors.pop(), this.layers);
             await player.init();
 
@@ -216,17 +216,17 @@ export default class Game extends EventEmitter {
                 break;
 
             case "1":
-                this.playersCount = 1;
+                this.options.playersCount = 1;
                 this.restart();
                 return;
 
             case "2":
-                this.playersCount = 2;
+                this.options.playersCount = 2;
                 this.restart();
                 return;
 
             case "3":
-                this.playersCount = 3;
+                this.options.playersCount = 3;
                 this.restart();
                 return;
 

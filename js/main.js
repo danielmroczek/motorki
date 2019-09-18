@@ -53,13 +53,20 @@ class App {
             view.remove();
             this.game.stop();
         }
-        this.game = new Game();
+
+        let options = {
+            playersCount: document.querySelector('input[name=playersCount]:checked').value
+        }
+
+        this.game = new Game(options);
         this.game.init();
 
         //TODO: Refactor. Reacting to change level event?
         let background = await this.game.loadLevel('tracks/' + track + '.svg');
         document.querySelector('.stage').style.background = background;
 
+
+        // hide menu
         document.querySelector('.menu').classList.add('hidden');
         // document.querySelector('footer').classList.remove('hidden');
         this.game.start();

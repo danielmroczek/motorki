@@ -10,6 +10,8 @@
 
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link href="https://fonts.googleapis.com/css?family=Inconsolata:700|Lato:400,700,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.min.css"
+        integrity="sha256-zmfNZmXoNWBMemUOo1XUGFfc0ihGGLYdgtJS3KCr/l0=" crossorigin="anonymous" />
     <!-- Place favicon.ico in the root directory -->
 
     <link rel="stylesheet" href="css/normalize.css">
@@ -18,43 +20,62 @@
 
 <body>
     <header>
-        <div class="logo">
-            <h1>Brum.io</h1>
-        </div>
+        <a class="logo" href="#">Brum.io</a>
     </header>
 
     <section>
         <div class="stage">
             <canvas id="gamecanvas"></canvas>
         </div>
-        <div class="menu">
-            <div>
-                    
-                <div>
-                    <label for="trackList"></label>Track:</label>
+        <div class="menu-container">
+            <div class="menu">
+
+                <div class="trackselect">
+                    <!-- <label for="trackList">Track:</label> -->
                     <select id="trackList"> </select>
+                    <img class="trackpreview" src="" alt="">
                 </div>
 
-                <img class="trackpreview" src="" alt="">
+                <div class="players">
+                    <label>
+                        <input type="radio" name="playersCount" value="1" checked>
+                        <i class="fas fa-male"></i>
+                    </label>
 
-                <div>
-                    <label for="playersCount"></label>Players:</label>
-                    <select name="playersCount"> 
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
+                    <label>
+                        <input type="radio" name="playersCount" value="2">
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                    </label>
+
+                    <label>
+                        <input type="radio" name="playersCount" value="3">
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                    </label>
+
+                    <!-- <label>
+                        <input type="radio" name="playersCount" value="3">
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                        <i class="fas fa-male"></i>
+                    </label> -->
+
                     </select>
                 </div>
-                    
-                <!-- <div> -->
-                    <p>Controls:</p><br>
-                    <p>Player 1 - Left Arrow, Right Arrow</p>
-                <!-- </div> -->
-                
-                <button class="start">Start!</button>
+
+                <!-- <div class="playercontrols">
+                        <p>Player 1 - <span class="left">◄</span> , <span class="right">►</span></p>
+                        <p>Player 2 - <span class="left">A</span> , <span class="right">S</span></p>
+                        <p>Player 3 - <span class="left">K</span> , <span class="right">L</span></p>
+                </div> -->
+
+                <button class="start"><i class="fas fa-gamepad"></i></button>
             </div>
 
-            
+
         </div>
     </section>
 
