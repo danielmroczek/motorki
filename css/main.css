@@ -284,6 +284,125 @@ div.stage {
   width: auto;
 }
 
+div.stage .countdown {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+div.stage .lap-banner {
+  position: absolute;
+  left: .5rem;
+  top: .5rem;
+  margin: 0;
+  font-family: 'Inconsolata', monospace;
+  font-size: 1.5em;
+}
+
+div.stage .countdown .lights {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 1rem;
+}
+
+div.stage .countdown .lights .light {
+  height: 3.5rem;
+  width: 3.5rem;
+  border-radius: 50%;
+  background: #f44336;
+  -webkit-box-shadow: 0 0 1rem rgba(244, 67, 54, 0.6);
+          box-shadow: 0 0 1rem rgba(244, 67, 54, 0.6);
+}
+
+div.stage .countdown .go {
+  font-family: 'Inconsolata', monospace;
+  font-size: 4em;
+  color: #76ff03;
+  margin: 0;
+}
+
+div.stage .countdown.green .light {
+  background: #76ff03;
+  -webkit-box-shadow: 0 0 1rem #76ff03;
+          box-shadow: 0 0 1rem #76ff03;
+}
+
+div.stage .falstart {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
+  padding: .5em 1.5em;
+  font-family: 'Inconsolata', monospace;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #ff5722;
+}
+
+div.stage .race-result {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  padding: 1.5em 1em;
+  font-family: 'Inconsolata', monospace;
+  background: #373737;
+}
+
+div.stage .race-result h2 {
+  margin: 0 0 .5em;
+}
+
+div.stage .race-result table {
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+div.stage .race-result th,
+div.stage .race-result td {
+  padding: .25em .75em;
+  text-align: left;
+}
+
+div.stage .race-result th {
+  border-bottom: 1px solid white;
+}
+
+div.stage .race-result td:nth-child(2) {
+  text-transform: uppercase;
+}
+
+div.stage .race-result .pos-1 {
+  color: #76ff03;
+}
+
 .hidden {
   display: none !important;
 }
@@ -314,7 +433,8 @@ button:active {
     -ms-grid-rows: max-content auto;
         grid-template-rows: -webkit-max-content auto;
         grid-template-rows: max-content auto;
-        grid-template-areas: "header main" "footer main";
+        grid-template-areas: "header main"
+ "footer main";
     -webkit-box-orient: vertical;
     -webkit-box-direction: normal;
         -ms-flex-direction: column;
@@ -329,7 +449,9 @@ button:active {
         grid-template-rows: max-content auto max-content;
     -ms-grid-columns: auto;
         grid-template-columns: auto;
-        grid-template-areas: "header" "main" "footer";
+        grid-template-areas: "header"
+ "main"
+ "footer";
     -webkit-box-orient: horizontal;
     -webkit-box-direction: normal;
         -ms-flex-direction: row;

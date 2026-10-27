@@ -176,6 +176,103 @@ div.stage {
     width: auto;
 }
 
+div.stage {
+    .lap-banner {
+        position: absolute;
+        left: .5rem;
+        top: .5rem;
+        margin: 0;
+        font-family: 'Inconsolata', monospace;
+        font-size: 1.5em;
+    }
+
+
+    .countdown {
+        @include full-size;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        .lights {
+            display: flex;
+            gap: 1rem;
+
+            .light {
+                height: 3.5rem;
+                width: 3.5rem;
+                border-radius: 50%;
+                background: #f44336;
+                box-shadow: 0 0 1rem rgba(244, 67, 54, .6);
+            }
+        }
+
+        .go {
+            font-family: 'Inconsolata', monospace;
+            font-size: 4em;
+            color: $accent-color;
+            margin: 0;
+        }
+
+        &.green .light {
+            background: $accent-color;
+            box-shadow: 0 0 1rem $accent-color;
+        }
+    }
+
+    .falstart {
+        position: absolute;
+        left: 50%;
+        bottom: 1.5rem;
+        transform: translateX(-50%);
+        padding: .5em 1.5em;
+        font-family: 'Inconsolata', monospace;
+        background: rgba(0, 0, 0, .7);
+        border: 1px solid #ff5722;
+    }
+
+    .race-result {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5em 1em;
+        font-family: 'Inconsolata', monospace;
+        background: scale-color($background, $lightness: 10%);
+
+        h2 {
+            margin: 0 0 .5em;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin-bottom: 1em;
+
+            th,
+            td {
+                padding: .25em .75em;
+                text-align: left;
+            }
+
+            th {
+                border-bottom: 1px solid $light-text;
+            }
+
+            td:nth-child(2) {
+                text-transform: uppercase;
+            }
+        }
+
+        .pos-1 {
+            color: $accent-color;
+        }
+    }
+}
+
 .hidden {
     display: none !important;
 }

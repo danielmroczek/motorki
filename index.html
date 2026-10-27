@@ -24,6 +24,32 @@
     <section>
         <div class="stage">
             <canvas id="gamecanvas"></canvas>
+            <div class="countdown hidden">
+                <div class="lights">
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                </div>
+                <p class="go">GO!</p>
+            </div>
+            <p class="lap-banner hidden"></p>
+            <div class="falstart hidden">Falstart +1 s</div>
+            <div class="race-result hidden">
+                <h2>Bieg ukończony</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Kto</th>
+                            <th>Czas</th>
+                            <th>Najlepsze</th>
+                            <th>Kary</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button class="to-menu">Do menu</button>
+            </div>
         </div>
         <div class="menu-container">
             <div class="menu">
