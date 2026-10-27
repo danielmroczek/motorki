@@ -4,6 +4,8 @@
 
 Gra/symulacja żużlowa "Kreski" - wyścigi na torach zdefiniowanych w plikach SVG (6 torów, m.in. Bydgoszcz) z wyborem liczby zawodników (1–3) i tabelą wyników. Kolory kasków jak w prawdziwym żużlu: red / white / yellow / blue.
 
+Gra jest luźno wzorowana na [kreski.org (wersja 2001)](https://www.kreski.org/ver2001.html).
+
 ## Technologie
 
 - Czysty JavaScript (ES modules)
@@ -15,6 +17,6 @@ Gra/symulacja żużlowa "Kreski" - wyścigi na torach zdefiniowanych w plikach S
 
 Najbardziej rozwinięty „silnik" serii żużlowej, ale niedokończony (`Game.build()` z TODO, „beta" w logo).
 
-## Dodatkowe informacje
+## Uruchomienie
 
-Kulminacja serii projektów żużlowych: `speedway-game` (Phaser) → `svg-path-to-points` (badania torów) → `zuzel-simple` (własny silnik na paper.js).
+Projekt nie wymaga builda — wystarczy serwer statyczny (np. `npx serve` lub `python -m http.server`), ponieważ pliki JS to moduły ES.
