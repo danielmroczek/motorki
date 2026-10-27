@@ -15,7 +15,8 @@ export default class Game extends EventEmitter {
                 width: 640,
                 height: 448
             },
-            playersCount: 1
+            playersCount: 1,
+            laps: 4
         }, options);
         this.timestep = 1000 / this.options.fps;
 
@@ -29,6 +30,11 @@ export default class Game extends EventEmitter {
         this.players = [];
         this.stopped = false;
         this.delta = 0;
+
+        // race state machine: countdown -> racing -> results
+        this.state = null;
+        this.countdownElapsed = 0;
+        this.countdownDuration = 0;
     }
 
     static async build(track) {
@@ -99,6 +105,7 @@ export default class Game extends EventEmitter {
 
         this.fitStageIntoParentContainer();
         this.addHooks();
+        this.beginCountdown();
 
         this.lastFrameTime = performance.now();
         requestAnimationFrame(e => this.loop(e));
@@ -133,7 +140,85 @@ export default class Game extends EventEmitter {
 
             this.players.push(player);
             this.resultsTable.add(player);
+
+            player.addEventListener('lap', data => this.onPlayerLap(data));
+            player.addEventListener('falstart', falstarter => this.emit('falstart', falstarter));
         };
+    }
+
+    beginCountdown() {
+        this.state = 'countdown';
+        this.countdownElapsed = 0;
+        this.countdownDuration = Math.floor(Math.random() * 400) * 10 + 1500;
+        this.emit('countdown', this);
+    }
+
+    go() {
+        this.state = 'racing';
+        // bikes wait at the start line until the player presses a control key
+        this.emit('go', this);
+    }
+
+    steer(player, direction, isPress) {
+        player.steerOn(direction);
+
+        if (!isPress) {
+            return;
+        }
+
+        if (this.state === 'countdown') {
+            // steering before the green light is a falstart (penalty)
+            player.falstart();
+        } else if (this.state === 'racing' && !player.started) {
+            // launching takes a fresh control press after GO
+            player.start();
+        }
+    }
+
+    onPlayerLap(data) {
+        let player = data.player;
+
+        player.lapTimes.push(data.time);
+
+        if (player.lapTimes.length < this.options.laps) {
+            this.emit('lapcompleted', {
+                player: player,
+                lap: player.lapTimes.length,
+                time: data.time
+            });
+            return;
+        }
+
+        this.playerFinished(player);
+    }
+
+    playerFinished(player) {
+        player.finish();
+        this.emit('playerfinished', player);
+
+        let allFinished = this.players.every(p => p.finished);
+        if (allFinished) {
+            this.finishRace();
+        }
+    }
+
+    finishRace() {
+        this.state = 'results';
+
+        let ranking = this.players.map(player => {
+            let total = player.lapTimes.reduce((sum, lapTime) => sum + lapTime, 0) + player.penaltyMs;
+
+            return {
+                player: player,
+                total: total,
+                best: Math.min(...player.lapTimes),
+                penaltyMs: player.penaltyMs
+            };
+        });
+
+        ranking.sort((a, b) => a.total - b.total);
+
+        this.emit('racefinished', ranking);
     }
 
     addHooks() {
@@ -188,31 +273,31 @@ export default class Game extends EventEmitter {
         //TODO: move key constant to player
         switch (e.key) {
             case "ArrowLeft":
-                this.players[0].steerOn("left");
+                this.steer(this.players[0], "left", !e.repeat);
                 break;
 
             case "ArrowRight":
-                this.players[0].steerOn("right");
+                this.steer(this.players[0], "right", !e.repeat);
                 break;
 
             case "A":
             case "a":
-                this.players[1].steerOn("left");
+                this.steer(this.players[1], "left", !e.repeat);
                 break;
 
             case "S":
             case "s":
-                this.players[1].steerOn("right");
+                this.steer(this.players[1], "right", !e.repeat);
                 break;
 
             case "K":
             case "k":
-                this.players[2].steerOn("left");
+                this.steer(this.players[2], "left", !e.repeat);
                 break;
 
             case "L":
             case "l":
-                this.players[2].steerOn("right");
+                this.steer(this.players[2], "right", !e.repeat);
                 break;
 
             case "1":
@@ -299,9 +384,9 @@ export default class Game extends EventEmitter {
         }
 
         if (controls.left > controls.right) {
-            this.players[0].steerOn('left');
+            this.steer(this.players[0], 'left', e.type === 'touchstart');
         } else {
-            this.players[0].steerOn('right');
+            this.steer(this.players[0], 'right', e.type === 'touchstart');
         }
     }
 
@@ -340,7 +425,19 @@ export default class Game extends EventEmitter {
     }
 
     tick(timediff) {
+        if (this.state === 'countdown') {
+            this.countdownElapsed += timediff;
+
+            if (this.countdownElapsed >= this.countdownDuration) {
+                this.go();
+            }
+
+            return;
+        }
+
         this.players.forEach(player => {
+            if (player.finished) return;
+
             player.move(timediff);
 
             if (!this.collidePlayers(player)) {
@@ -363,6 +460,8 @@ export default class Game extends EventEmitter {
             // continue when dealing with the same player
             if (p1 === p2) return false;
 
+            // finished players are ghosts
+            if (p2.finished) return false;
             p2.bodyVector.some(p2vector => {
                 if (p2vector.collide(p1.moveVector)) {
                     if (!p1.inCollision) {
@@ -389,6 +488,7 @@ export default class Game extends EventEmitter {
     }
 
     dispose() {
+        this.removeHooks();
         this.level.dispose();
     };
 }
