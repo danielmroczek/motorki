@@ -61,6 +61,10 @@ export default class Player extends EventEmitter{
         this.started = false;
         // if player has crossed start line for the first time
         this.startedLap = false;
+        // race (Bieg) bookkeeping
+        this.penaltyMs = 0;
+        this.lapTimes = [];
+        this.finished = false;
 
         this.normalizedBodyVertices = [
             {
@@ -155,7 +159,7 @@ export default class Player extends EventEmitter{
     }
 
     move(timediff) {
-        if (this.started) {
+        if (this.started && !this.finished) {
             this.angle = Util.normalizeAngle(this.angle);
 
             if (!this.inCollision) {
@@ -202,6 +206,14 @@ export default class Player extends EventEmitter{
         }
     }
 
+    start() {
+        this.started = true;
+    }
+
+    finish() {
+        this.finished = true;
+    }
+
     updateVertices() {
         // moveVector
         this.oldFrontVertex = this.newFrontVertex;
@@ -222,6 +234,14 @@ export default class Player extends EventEmitter{
     }
 
     draw(e) {
+        if (this.finished && this.body.opacity > 0) {
+            // paper.js frame event delta is in seconds
+            this.body.opacity = Math.max(this.body.opacity - e.delta, 0);
+            if (this.body.opacity <= 0) {
+                this.body.visible = false;
+            }
+        }
+
         this.body.position = new Point(this.position);
         this.body.rotation = this.angle + this.speed * this.anglespeed;
   
@@ -298,6 +318,10 @@ export default class Player extends EventEmitter{
     };
 
     finishAndStartLap() {
+        if (this.finished) {
+            return;
+        }
+
         let currentTime = this.lapTime;
         this.lapTime = 0;
 
@@ -326,10 +350,16 @@ export default class Player extends EventEmitter{
     };
 
     steerOn(s) {
+        // note: `started` is set only by start() (green light),
+        // so steering during countdown is only a falstart
         if (s) {
             this.controls[s] = 1;
-            this.started = true;
         }
+    };
+
+    falstart() {
+        this.penaltyMs += 1000;
+        this.emit('falstart', this);
     };
 
     onCollide(collisions) {
