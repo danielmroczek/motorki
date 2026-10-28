@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues are tracked as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+Issues are tracked as GitHub issues in `danielmroczek/kreski` (via `gh`; include closed issues when gathering history). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
