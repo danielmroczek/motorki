@@ -20,7 +20,7 @@ Run `gh issue view <number> --repo danielmroczek/kreski --comments`.
 
 ## Historical `.scratch/` content
 
-Before the switch, issues lived as markdown under `.scratch/<feature-slug>/` (spec: `spec.md`, tickets: `issues/NN-<slug>.md`, triage state in a `Status:` line). Those files are readable context only — do not write new issues or ticket state there.
+Before the switch, issues lived as markdown under `.scratch/<feature-slug>/`. The `komputer` tickets have been published to GitHub (`#1`–`#4`) and their local copies deleted — the issues here are the source of truth. Only feature specs like `.scratch/komputer/spec.md` remain locally; they are still referenced by the GitHub issues and are not copied there in full.
 
 ## Wayfinding operations
 
