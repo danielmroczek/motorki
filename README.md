@@ -20,7 +20,7 @@ Kolizje są segmentowe (linie, bez pikseli). Zderzenie z innym motocyklem
 cofa ruch i tnie prędkość na pół. Uderzenie w ścianę toru to **ślizg**:
 składowa ruchu prostopadła do ściany jest odrzucana, a równoległa zostaje
 (tłumiona × 0.9) — motocykl jazie wzdłuż bandy zamiast zastygać w miejscu.
-Detale: `.scratch/komputer/issues/01-slizg-po-scianie.md`, testy w `tests/`.
+Detale: GitHub issue `danielmroczek/kreski#4`, testy w `tests/`.
 
 ## Status
 
