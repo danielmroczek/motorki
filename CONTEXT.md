@@ -34,3 +34,27 @@ _Avoid_: kolo, round.
 **Ukończenie (finish)**:
 Moment przekroczenia linii mety po przejechaniu ostatniego (4.) okrążenia.
 _Avoid_: koniec biegu (to wyzwalacz Podsumowania, nie sam moment).
+
+**Komputer (computer)**:
+Motocykl, który sam generuje polecenia lewo/prawo zamiast człowieka. Na starcie biegu jest ich łącznie (z ludźmi) do 4.
+_Avoid_: bot, AI, gracz komputerowy, CPU.
+
+**Radar (radar)**:
+Wycinek spojrzenia Komputera do przodu: najbliższy punkt trasy dalej niż minimalny dystans — cel, do którego dopasowuje kąt.
+_Avoid_: cel, target, waypoint (to punkt na Trasie, nie odczyt Radaru).
+
+**Mózg (brain)**:
+Logika decyzyjna Komputera: porównuje kąt celu z obecnym kierunkiem i decyduje: prosto, lewo lub prawo — z wyjątkiem kolizyjnych prób.
+_Avoid_: AI, sterownik, kontroler.
+
+**Trasa (route)**:
+Ciąg kolejnych punktów wskazujących przebieg jazdy wokół toru, losowany na bieg. Komputer ma własną Trasę, prowadzi ją cyklicznie i podąża za nią przez cały bieg; generowana z geometrii toru SVG.
+_Avoid_: waypointy, ścieżka, linia jazdy.
+
+**Scatter**:
+Rozmycie punktu Radaru na poszczególnych klatkach, określające dokładność prowadzenia Komputera — mniejszy scatter = precyzyjniejsza jazda. Różni Komputery mają inne poziomy scatter.
+_Avoid_: jitter, szum, losowość.
+
+**Ślizg (ślizg po ścianie)**:
+Reakcja motocykla na uderzenie w ścianę toru: składowa ruchu prostopadła do ściany jest odrzucana, a równoległa zostaje w tłumionej formie — motocykl płynie wzdłuż bandy zamiast zastygać w miejscu.
+_Avoid_: wall slide, slajd.
