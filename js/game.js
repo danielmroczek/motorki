@@ -440,14 +440,17 @@ export default class Game extends EventEmitter {
 
             player.move(timediff);
 
+            let wallHit = null;
             if (!this.collidePlayers(player)) {
-                if (!this.level.collide(player)) {
+                wallHit = this.level.collide(player);
+                if (!wallHit) {
                     player.inCollision = false;
                 }
             }
 
             if (player.inCollision) {
-                player.revertPosition();
+                // wall segment => slide along it; rider collision => full revert
+                player.revertPosition(wallHit);
             }
 
             player.checkLap(this.level.startLine);

@@ -94,7 +94,8 @@ export default class Level {
             if (!body.inCollision) {
                 body.onCollide(collisions);
             }
-            return true;
+            // hit segment is needed to slide along the wall (normal/tangent split)
+            return collisions[0];
         } 
 
         return false;

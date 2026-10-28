@@ -12,6 +12,15 @@ Gra jest luźno wzorowana na [kreski.org (wersja 2001)](https://www.kreski.org/v
 - paper.js — wektorowy canvas
 - Klasy: `Game`, `Level`, `Player`, `Vertex`, `EventEmitter`, `ResultsTable`, `TrackSelector`
 - Szkielet HTML5 Boilerplate
+- Testy: [Vitest](https://vitest.dev) (`npm test`)
+
+## Fizyka kolizji
+
+Kolizje są segmentowe (linie, bez pikseli). Zderzenie z innym motocyklem
+cofa ruch i tnie prędkość na pół. Uderzenie w ścianę toru to **ślizg**:
+składowa ruchu prostopadła do ściany jest odrzucana, a równoległa zostaje
+(tłumiona × 0.9) — motocykl jazie wzdłuż bandy zamiast zastygać w miejscu.
+Detale: `.scratch/komputer/issues/01-slizg-po-scianie.md`, testy w `tests/`.
 
 ## Status
 

@@ -8,6 +8,10 @@ export default class Player extends EventEmitter{
 
         this.skidmarkMaxSegmentLength = 5;
         this.skidmarkMaxPathLength = 100;
+
+        // damped tangent speed kept when sliding along a wall (like the
+        // original's motor-motor collision speed factor)
+        this.WALL_SLIDE_FACTOR = 0.9;
         
         this.position = {
             x: 400,
@@ -385,8 +389,54 @@ export default class Player extends EventEmitter{
         }
     };
 
-    revertPosition() {
-        this.position = this.lastPosition;
+    /**
+     * Wall hit: split this tick's step into normal (into the wall) and
+     * tangent (along the wall) components. The tangent part survives, damped —
+     * the bike slides along the wall instead of sticking to it.
+     *
+     * @param {Vertex} [wall]  trafiony segment ściany (z Level.collide);
+     *   brak = zderzenie z innym motocyklem → pełny revert jak dotychczas
+     */
+    revertPosition(wall) {
+        if (wall) {
+            // this tick's step: position was advanced by move(), while
+            // lastPosition still holds the pre-move spot (move() does not
+            // refresh lastPosition during a collision)
+            let sx = this.position.x - this.lastPosition.x;
+            let sy = this.position.y - this.lastPosition.y;
+
+            // wall direction (unit)
+            let wx = wall.p2.x - wall.p1.x;
+            let wy = wall.p2.y - wall.p1.y;
+            let wallLen = Math.hypot(wx, wy) || 1;
+            wx /= wallLen;
+            wy /= wallLen;
+
+            // damped tangent part of the step survives, the part pushing
+            // into the wall is dropped (factor like the original's
+            // motor-motor collision speed factor). The step is decomposed,
+            // not accumulated: during a collision move() keeps lastPosition
+            // at the pre-move spot, so slide position = lastPosition + one
+            // damped step along the wall — harmless to repeat every tick
+            // and never compounding (the bike cannot shoot off the track).
+            let stepX = this.position.x - this.lastPosition.x;
+            let stepY = this.position.y - this.lastPosition.y;
+            let along = (stepX * wx + stepY * wy) * this.WALL_SLIDE_FACTOR;
+
+            this.position = {
+                x: this.lastPosition.x + wx * along,
+                y: this.lastPosition.y + wy * along
+            };
+            // lastPosition intentionally NOT set to the slid position: it
+            // stays the base the next tick's slide is built from. It gets
+            // refreshed by move() the moment the collision ends.
+        } else {
+            this.position = this.lastPosition;
+        }
+
+        // front vertex stays on the near side of the wall (full revert,
+        // like the original) — otherwise successive moveVectors would
+        // start beyond the wall and hits would stop registering
         this.newFrontVertex = this.oldFrontVertex;
     }
 
