@@ -1,5 +1,6 @@
 import Game from "./game.js";
 import TrackSelector from "./trackSelector.js";
+import Route from "./route.js";
 
 window.addEventListener('load', () => {
     let app = new App();
@@ -103,6 +104,11 @@ class App {
         let background = await this.game.loadLevel('tracks/' + track + '.svg');
         document.querySelector('.stage').style.background = background;
 
+        // ?debug=true — podglądowy overlay Trasy (łuk środkowy toru)
+        if (new URLSearchParams(window.location.search).get('debug') === 'true') {
+            this.showRouteDebug();
+        }
+
         this.hideOverlays();
 
         this.game.addEventListener('countdown', () => {
@@ -173,6 +179,22 @@ class App {
         // hide menu (the full-size container intercepts clicks over the stage)
         document.querySelector('.menu-container').classList.add('hidden');
         this.game.start();
+    }
+
+    /**
+     * Rysuje punkty Trasy na warstwie players (na wierzchu toru) —
+     * podgląd na żywo generowanego łuku środkowego (issue #1).
+     * Rysowanie należy do Route (3. argument forTrack); tutaj tylko
+     * aktywujemy właściwą warstwę, bo Route dodaje kropki do warstwy
+     * aktywnej, a aplikacja ustawia insertItems = false.
+     */
+    showRouteDebug() {
+        const playersLayer = this.game.layers.players;
+        const previouslyActive = project.activeLayer;
+        playersLayer.activate();
+        Route.forTrack(this.game.level, Math.random, true);
+        // paper.js nie pozwala przypisać project.activeLayer bezpośrednio
+        previouslyActive.activate();
     }
 
     showResults(ranking) {
