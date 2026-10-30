@@ -3,6 +3,26 @@ import Util from './util.js';
 import Vertex from './vertex.js';
 
 export default class Player extends EventEmitter{
+    /** Prędkości do wyboru w menu (status skrętu i rozpędzania). */
+    static PHYSICS_TYPE = {
+        FAST: {
+            anglespeedAccel: 1.5,
+            anglespeedMinMax: 5,
+            anglespeedBrake: 5,
+            maxSpeed: 20,
+            minSpeed: 2,
+            acceleration: 0.8
+        },
+        SLOW: {
+            anglespeedAccel: 1.5,
+            anglespeedMinMax: 6,
+            anglespeedBrake: 7,
+            maxSpeed: 20,
+            minSpeed: 2,
+            acceleration: 0.6
+        }
+    };
+
     constructor(color, layers) {
         super();
 
@@ -20,26 +40,7 @@ export default class Player extends EventEmitter{
         this.height = 20;
         this.width = 7;
 
-        this.PHYSICS_TYPE = {
-            FAST: {
-                anglespeedAccel: 1.5,
-                anglespeedMinMax: 5,
-                anglespeedBrake: 5,
-                maxSpeed: 20,
-                minSpeed: 2,
-                acceleration: 0.8
-            },
-            SLOW: {
-                anglespeedAccel: 1.5,
-                anglespeedMinMax: 6,
-                anglespeedBrake: 7,
-                maxSpeed: 20,
-                minSpeed: 2,
-                acceleration: 0.6
-            }
-        }
-
-        this.physics = this.PHYSICS_TYPE.SLOW;
+        this.physics = Player.PHYSICS_TYPE.SLOW;
         this.angle = 90;
         this.anglespeed = 0;
         this.speed = this.physics.minSpeed;
