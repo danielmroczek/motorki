@@ -10,7 +10,7 @@ Gra jest luźno wzorowana na [kreski.org (wersja 2001)](https://www.kreski.org/v
 
 - Czysty JavaScript (ES modules)
 - paper.js — wektorowy canvas
-- Klasy: `Game`, `Level`, `Player`, `Vertex`, `Route`, `EventEmitter`, `ResultsTable`, `TrackSelector`
+- Klasy: `Game`, `Level`, `Player`, `Vertex`, `Route`, `Brain`, `EventEmitter`, `ResultsTable`, `TrackSelector`
 - Szkielet HTML5 Boilerplate
 - Testy: [Vitest](https://vitest.dev) (`npm test`)
 
@@ -49,6 +49,53 @@ testy w `tests/route.test.js`.
 **Podgląd w grze:** uruchom stronę z parametrem `?debug=true`
 (np. `http://127.0.0.1:5501/index.html?debug=true`) i wystartuj bieg —
 punkty Trasy pojawią się jako żółto-czerwone kropki na warstwie `players`.
+
+## Mózg Komputera (`Brain`)
+
+Moduł `js/brain.js` to port logiki sterującej Komputerem z oryginału
+(fizyka.md §8.3–§8.6). Trzy warstwy:
+
+1. **Radar (§8.4)** — od bieżącego waypointa ogląda okno 10 punktów Trasy
+	do przodu, pomija punkty bliższe niż **16 px** od środka sprite'a
+	(`position` = środek sprite'a, przód sprite'a jest 10 px przed nim)
+	i wybiera najbliższy punkt za progiem. `waypointIdx >= count → 0`
+	(zawijanie do przodu). Każdy punkt dostaje **Scatter** — jitter
+	całkowity `rand()%scatter − scatter/2` px wg trybu Komputera (1–4:
+	3/2/1/0 px), losowany osobno na osie X i Y **co klatkę**. Gdy nic
+	nie spełnia progu, odczyt Radaru z poprzedniej klatki zostaje
+	(`radarX`/`radarY` oryginału).
+2. **Kąt celu (§8.5)** — `atan2(dy, dx)·180/π + 90` (konwencja gry:
+	0° = północ, rosnąco CW) z delty odczytów Radaru klatka → klatka
+	(`AI_SetTargetDir`). Pierwsza klatka (brak starego odczytu):
+	`wantedDir = dir` — jak w oryginale.
+3. **Drzewo decyzyjne (§8.6)** — `dAng` = kąt celu − kierunek (zawinięty
+	do ±180°): `dAng ≥ +21° → prawo`, `dAng < −10° → lewo`, a w paśmie
+	środkowym **korekta marży**: `margin = −(mode % 5)·turnStep/2`;
+	jeśli `lane·3 < kąt` — doskok w prawo, inaczej prosto; gdy przekręcił
+	— powrót w lewo. Komenda: `−1 / 0 / +1` — ta sama semantyka
+	klawiszy człowieka.
+
+**Test na sucho (§5.3)**: przed przyjęciem komendy Mózg symuluje kolejny
+krok fizyki (pozycja, kąt, speed, anglespeed) i sprawdza `Level.collide`
+oraz ciała pozostałych zawodników na symulowanych wektorach — read-only.
+Jeśli wybrana komenda koliduje, próbuje `−1, 0, +1` po kolei i bierze
+pierwszą wolną; gdy wszystkie kolidują — zostaje przy decyzji naturalnej.
+Bez licznika stuck i eliminacji (spec decyzja #19).
+
+API:
+
+```js
+const brain = new Brain({ mode: 1, rng: Math.random, dt: 1000 / 60 });
+const cmd = brain.decide(player, route, { level, players }); // −1 / 0 / +1
+brain.decide(player, route); // bez world — czysta logika, bez fallbacku
+```
+
+Eksporty: `CMD` (`LEFT/-1`, `STRAIGHT/0`, `RIGHT/+1`) i stałe oryginału
+(`AI_SCATTER_MOD`, `AI_SCATTER_MAX`, `AI_TURN_LEFT_THRESH`,
+`AI_TURN_RIGHT_THRESH`, `RADAR_MIN_DIST`, `RADAR_LOOKAHEAD`).
+Detale: GitHub issue `danielmroczek/motorki#2`, testy w
+`tests/brain.test.js`. **Uwaga:** Mózg nie jest jeszcze podłączony do gry —
+podpięcie do `Game` to osobny ticket (#3).
 
 ## Status
 
