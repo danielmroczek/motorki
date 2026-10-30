@@ -3,6 +3,9 @@ import Player from './player.js';
 import Util from './util.js';
 import EventEmitter from './eventEmitter.js';
 import ResultsTable from './resultsTable.js';
+import Brain from './brain.js';
+import Route from './route.js';
+import StartReaction from './startReaction.js';
 
 export default class Game extends EventEmitter {
     constructor(options) {
@@ -16,6 +19,7 @@ export default class Game extends EventEmitter {
                 height: 448
             },
             playersCount: 1,
+            computersCount: 0,
             laps: 4
         }, options);
         this.timestep = 1000 / this.options.fps;
@@ -30,6 +34,18 @@ export default class Game extends EventEmitter {
         this.players = [];
         this.stopped = false;
         this.delta = 0;
+        // elapsed race time since GO (ms; tick-accumulated, pause-safe)
+        this.raceElapsed = 0;
+        // Route shared by all Computers (generated once per race — ADR-0001)
+        this.route = null;
+        // Computer brains (parallel to computer players, scatter modes 1..4)
+        this.brains = [];
+        // Computer start reaction timestamps per player (index → ms after GO)
+        this.computerReactions = new Map();
+        // human first-turn samples of the current race (spec decyzja #16);
+        // falstarters are rejected (their presses before GO do not count)
+        this.falstarters = new Set();
+        this.startSamples = [];
 
         // race state machine: countdown -> racing -> results
         this.state = null;
@@ -121,11 +137,20 @@ export default class Game extends EventEmitter {
 
     async setupPlayers() {
         this.players = [];
+        this.brains = [];
+        this.brainByPlayer = new Map();
+        this.computerReactions = new Map();
+        this.falstarters = new Set();
+        this.startSamples = [];
         let startPoints = Util.shuffle(this.level.startPoints);
         let colors = Util.shuffle(this.playerColors);
         this.resultsTable.clear();
 
-        for (let i = 0; i < this.options.playersCount; i += 1) {
+        let peopleCount = this.options.playersCount;
+        let computersCount = this.options.computersCount || 0;
+        this.route = Route.forTrack(this.level);
+
+        for (let i = 0; i < peopleCount + computersCount; i += 1) {
             let player = new Player(colors.pop(), this.layers);
             await player.init();
 
@@ -141,8 +166,27 @@ export default class Game extends EventEmitter {
             this.players.push(player);
             this.resultsTable.add(player);
 
+            if (i < peopleCount) {
+                // human: name is the bike colour (as before)
+                player.name = player.color;
+            } else {
+                // Computer: scatter mode = order of adding to the field
+                // (spec decyzja #15), name „Komputer N" (HUD + results)
+                player.computer = true;
+                player.mode = i - peopleCount + 1;
+                player.name = 'Komputer ' + player.mode;
+                let brain = new Brain({ mode: player.mode });
+                brain.waypointIdx = Route.startIndexFor(this.route, startPoint);
+                this.brains.push(brain);
+                this.brainByPlayer.set(player, brain);
+            }
+
             player.addEventListener('lap', data => this.onPlayerLap(data));
             player.addEventListener('falstart', falstarter => this.emit('falstart', falstarter));
+            player.addEventListener('falstart', falstarter => {
+                // falstarted riders do not contribute start samples
+                this.falstarters.add(falstarter);
+            });
         };
     }
 
@@ -155,11 +199,34 @@ export default class Game extends EventEmitter {
 
     go() {
         this.state = 'racing';
+        this.raceElapsed = 0;
         // bikes wait at the start line until the player presses a control key
         this.emit('go', this);
+
+        // Computers roll their reaction latency right after GO (spec decyzja
+        // #16): median of human starts × personality factor + noise, or
+        // 140–320 ms with no history. Logged for verification (kryterium b.).
+        let startReaction = this.options.startReaction || this.startReaction;
+        if (!startReaction) {
+            startReaction = this.startReaction = new StartReaction();
+        }
+        this.players.forEach(player => {
+            if (player.computer) {
+                let delay = startReaction.delayFor(player.mode);
+                this.computerReactions.set(player, delay);
+                if (typeof console !== 'undefined') {
+                    console.log(`${player.name}: start po ${Math.round(delay)} ms (mode ${player.mode})`);
+                }
+            }
+        });
     }
 
     steer(player, direction, isPress) {
+        if (!player || player.computer) {
+            // human input never drives a Computer (0-people races etc.)
+            return;
+        }
+
         player.steerOn(direction);
 
         if (!isPress) {
@@ -172,7 +239,22 @@ export default class Game extends EventEmitter {
         } else if (this.state === 'racing' && !player.started) {
             // launching takes a fresh control press after GO
             player.start();
+            this.recordStartSample(player);
         }
+    }
+
+    /**
+     * Sample of a human launch: time of the first turn after GO (spec
+     * decyzja #16). Falstarters are rejected; committed after the race.
+     */
+    recordStartSample(player) {
+        if (player.computer) {
+            return; // Computers never record samples
+        }
+        if (this.falstarters.has(player)) {
+            return;
+        }
+        this.startSamples.push(this.raceElapsed);
     }
 
     onPlayerLap(data) {
@@ -204,6 +286,12 @@ export default class Game extends EventEmitter {
 
     finishRace() {
         this.state = 'results';
+
+        // save the race's human start samples to the reaction history
+        let startReaction = this.options.startReaction || this.startReaction;
+        if (startReaction) {
+            startReaction.commit(this.startSamples);
+        }
 
         let ranking = this.players.map(player => {
             let total = player.lapTimes.reduce((sum, lapTime) => sum + lapTime, 0) + player.penaltyMs;
@@ -301,18 +389,15 @@ export default class Game extends EventEmitter {
                 break;
 
             case "1":
-                this.options.playersCount = 1;
-                this.restart();
+                this.restartWithPeople(1);
                 return;
 
             case "2":
-                this.options.playersCount = 2;
-                this.restart();
+                this.restartWithPeople(2);
                 return;
 
             case "3":
-                this.options.playersCount = 3;
-                this.restart();
+                this.restartWithPeople(3);
                 return;
 
             case "r":
@@ -325,6 +410,21 @@ export default class Game extends EventEmitter {
                 this.togglePause();
                 break;
         }
+    }
+
+    /**
+     * Restart z N ludźmi (klawisze 1/2/3; spec decyzja #17): pozostałe
+     * sloty stawki.number (do 4) wypełniają Komputery — klawisze nie produkcją
+     * mniejszej stawki ani nie dają przeszacować limitu. Utrzymuje zgodnosc
+     * menu roster ↔ bieg (`this.rosterChanged` callback ustawia App).
+     */
+    restartWithPeople(people) {
+        this.options.playersCount = people;
+        this.options.computersCount = 4 - people;
+        if (this.rosterChanged) {
+            this.rosterChanged(people, this.options.computersCount);
+        }
+        this.restart();
     }
 
     onKeyup(e) {
@@ -435,8 +535,29 @@ export default class Game extends EventEmitter {
             return;
         }
 
-        this.players.forEach(player => {
+        this.raceElapsed += timediff;
+
+        this.players.forEach((player, index) => {
             if (player.finished) return;
+
+            // Computer driver: every racing frame the Brain sets
+            // Player.controls (existing seam) — same semantics as keys
+            let brain = this.brainByPlayer.get(player);
+            if (brain && !player.started && this.raceElapsed >= (this.computerReactions.get(player) || 0)) {
+                player.start();
+            }
+            if (brain && player.started) {
+                let cmd = brain.decide(player, this.route, {
+                    level: this.level,
+                    players: this.players
+                });
+                player.steerOff();
+                if (cmd === -1) {
+                    player.steerOn('left');
+                } else if (cmd === 1) {
+                    player.steerOn('right');
+                }
+            }
 
             player.move(timediff);
 
