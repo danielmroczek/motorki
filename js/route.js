@@ -17,6 +17,14 @@ export default class Route {
         const segments = level.vertices;
         const loop = radialLoop(centroidOf(segments), segments);
         const points = resampleClosed(loop, Route.ROUTE_STEP);
+        // Orientacja pętli zgodnie z zamierzonym kierunkiem jazdy toru.
+        // radialLoop porządkuje punkty po kącie promienia, więc pętla
+        // dostaje sztywną orientację (zgodną z zegarem na ekranie), która
+        // na realnych torach bywa PRZECIWNA do jazdy wyznaczonej kątem
+        // startowym (Level.startPoints[0].angle). Pure-pursuit (Brain)
+        // celuje w punkty "naprzód po pętli" — odwrotna orientacja Trasy
+        // oznaczałaby jazdę pod prąd i okrążenia naliczane jako cheat.
+        orientLoopToStart(points, firstStartPoint(level));
         // wspólny offset boczny losowany raz na bieg (ADR-0001): rng → [−1,1]
         // × 2/3 dystansu do najbliższej ściany (jazda zawsze w torze)
         const bias = 2 * rng() - 1;
@@ -49,6 +57,67 @@ export default class Route {
         });
         return best;
     }
+}
+
+/**
+ * Pierwszy punkt startowy toru (Level.startPoints[0]) albo null, gdy tor
+   go nie deklaruje (stuby w testach mają tylko .vertices).
+ */
+function firstStartPoint(level) {
+    const starts = level && level.startPoints;
+    if (Array.isArray(starts) && starts.length > 0 && starts[0]) {
+        return starts[0];
+    }
+    return null;
+}
+
+/**
+ * Odwraca kolejność punktów pętli, gdy biegnie pod prąd względem kąta
+ * startowego. Kąt jest w konwencji gry (0° = północ, rosnąco zgodnie
+ * z zegarem), więc kierunek jazdy to (sin a, −cos a).
+ *
+ * Styczna pętli liczona jest w następnym punkcie (idx+1). Gdy jest ona
+ * prostopadła do jazdy (iloczyn skalarny ≈ 0 — start leży na zakręcie
+ * „poprzecznym" do stycznej), porównujemy w pierwszą stronę drugą
+ * połowę łuku: sprzęgamy orientację z LOOPSZYM segmentem pętli (punkt
+ * idx + quarterCount), gdzie styczna jest już przekątna względem prostej
+ * startu. Gdy obie styczne są prostopadłe (teoretycznie: idealne
+ * kółko z promieniem = 0) — TCP orientacja zostaje (rówie dobra).
+ */
+function orientLoopToStart(points, start) {
+    if (!start || !Number.isFinite(start.angle) || !points || points.length < 2) {
+        return;
+    }
+    const alongAt = (i) => {
+        const a = points[i % points.length];
+        const b = points[(i + 1) % points.length];
+        const rad = start.angle * Math.PI / 180;
+        return (b.x - a.x) * Math.sin(rad) + (b.y - a.y) * (-Math.cos(rad));
+    };
+    const idx = nearestPointIndex(points, start);
+    let along = alongAt(idx);
+    if (Math.abs(along) < 1e-6) {
+        // styczna w starcie prostopadła do jazdy — decydować ma segment
+        // ćwierć pętli dalej, gdzie styczna jest już przekątna
+        along = alongAt(idx + Math.floor(points.length / 4));
+    }
+    if (along < 0) {
+        points.reverse();
+    }
+}
+
+/** Indeks punktu najbliższego pozycji (jak Route.startIndexFor). */
+function nearestPointIndex(points, pos) {
+    let best = 0;
+    let bestD = Infinity;
+    points.forEach((p, i) => {
+        const d = (p.x - pos.x) ** 2 + (p.y - pos.y) ** 2;
+        if (d < bestD) {
+            bestD = d;
+            best = i;
+        }
+    });
+    return best;
 }
 
 /**

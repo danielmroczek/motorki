@@ -3,28 +3,29 @@ import Vertex from './vertex.js';
 import Player from './player.js';
 
 /**
- * Mózg Komputera — port logiki oryginału (fizyka.md §8.3–§8.6, GitHub issue #2).
+ * Mózg Komputera — pure-pursuit: jazda do przodu po linii wyścigu.
  *
- * Trzy warstwy:
- *  1. Radar (§8.4): od bieżącego waypointa 10 punktów Trasy do przodu,
- *     pomiń odczyty bliższe niż 16 px od środka sprite'a; odczyt Radaru =
- *     najbliższy punkt za progiem w oknie („best" startuje z 9999 — jak
- *     w oryginale). Rozmycie Scatter (całkowite, jak rand()%scatter −
- *     scatter/2 w §8.3) losowane osobno na X i Y **co klatkę**.
- *  2. Kąt celu (§8.5): atan2(dy, dx)·180/π + 90 z delty odczytów Radaru
- *     klatka → klatka (AI_SetTargetDir); pierwsza klatka — wantedDir =
- *     kierunek gracza. Konwencja gry: 0° = północ, rosnąco CW.
- *  3. Drzewo decyzyjne (§8.6): dAng = kąt celu − kierunek (zawinięty do
- *     ±180°); dAng < −10° → lewo, dAng ≥ +21° → prawo, pas środkowy
- *     z korektą „marży" od mode % 5. Komenda: −1 / 0 / +1 — ta sama
- *     semantyka co klawisze człowieka.
+ * Przepisany po feedbacku z rozgrywki (2026-10-30): port oryginalnego AI
+ * (fizyka.md §8) celował co klatkę w NAJBLIŻSZY punkt Trasy, więc przy
+ * ciasnych punktach kierunek celu skakał o ±90° i Komputer wywijał
+ * bączki / krążył w miejscu, zamiast jechać. Nowa logika jest prosta
+ * i szybka:
  *
- * Test na sucho (§5.3, spec decyzja #14): jeśli wybrana komenda kończy się
- * kolizją w mini-symulacji następnego kroku (pozycja, kąt, speed, anglespeed
- * po komendzie + istniejące `Level.collide` / `collidePlayers` na
- * symulowanych wektorach — read-only), Mózg próbuje −1, 0, +1 po kolei.
+ *  1. Najbliższy punkt Trasy (okno wokół ostatniego waypointa; gdy
+ *     się gubi — pełny skan pętli).
+ *  2. Cel = punkt Trasy kilka pozycji DO PRZODU wzdłuż pętli — cel
+ *     „wybiega" przed motocykl, więc jazda tnie łuki (racing line),
+ *     a nie klei się do każdego punkcika.
+ *  3. Sterowanie wg błędu kątowego do celu (0° = północ, CW): poza
+ *     martwym pasem skręt, w pasie prosto = pełny gaz.
+ *  4. Test na sucho (fizyka.md §5.3): jeśli wybrana komenda kończy się
+ *     kolizją w mini-symulacji następnego kroku, próbujemy prosto →
+ *     lewo → prawo (pierwsza wolna); gdy wszystkie kolidują — zostaje
+ *     decyzja naturalna (ślizg po bandzie robi resztę).
  *
- * Bez licznika stuck i eliminacji (spec decyzja #19).
+ * Osobowość trybów 1–4 (dawniej Scatter, spec decyzja #15 → decyzja
+ * #20): im wyższy tryb, tym dłużej cel wybiega w przód — wyższe tryby
+ * tną zakręty agresywniej i jadą szybciej.
  */
 
 /** Komendy Mózgu — identyczna semantyka klawiszy człowieka. */
@@ -34,20 +35,22 @@ export const CMD = {
     RIGHT: 1
 };
 
-/** Stałe oryginału (fizyka.md §8.1). Nazwy z §16.6 oryginału — port. */
-export const AI_SCATTER_MOD = 5;
-export const AI_SCATTER_MAX = 4;
-export const AI_TURN_LEFT_THRESH = -10;
-export const AI_TURN_RIGHT_THRESH = 21;
-export const RADAR_MIN_DIST = 16.0;
-export const RADAR_LOOKAHEAD = 10;
+/** Ile punktów Trasy (co ~20 px) cel wybiega przed najbliższy punkt. */
+export const LOOKAHEAD_POINTS = 3; // dla mode 1; mode 4 → 6
+/** Okno przeszukiwania Trasy wokół ostatniego waypointa (indeksy). */
+export const NEAREST_WINDOW_BACK = 6;
+export const NEAREST_WINDOW_FWD = 22;
+/** Powyżej tej odległości (px) okno lokalne się „gubi" → pełny skan. */
+export const LOST_DISTANCE = 45;
+/** Martwy pas błędu kątowego (°) — w nim jedziemy prosto (pełny gaz). */
+export const DEAD_BAND_DEG = 8;
 
 export default class Brain {
 
     /**
      * @param {object} [options]
-     * @param {number} [options.mode] Scatter-mode Komputera 1–4 (spec decyzja
-     *   #15: kolejność dodawania do stawki; jitter 3/2/1/0 px)
+     * @param {number} [options.mode] tryb Komputera 1–4 (osobowość:
+     *   siła wybiegania celu w przód)
      * @param {function} [options.rng] generator [0,1) (domyślnie Math.random)
      * @param {number} [options.dt] krok symulacji na sucho (ms; 1000/60 jak gra)
      */
@@ -56,20 +59,15 @@ export default class Brain {
         this.rng = rng;
         this.dt = dt;
 
-        // Scatter: oryginał losuje jitter = 4 − mode % 5 px; tryby 1–4 specu
-        // dają 3/2/1/0 px (mode % 5 → 1..4), wyższe/zerowe clampujemy.
-        this.scatter = Math.min(3, Math.max(0, AI_SCATTER_MAX - (mode % AI_SCATTER_MOD)));
-
-        // indeks waypointa Trasy (cykliczny, zawijany do przodu — §8.4)
+        // indeks najbliższego punktu Trasy (Game ustawia startowy przez
+        // Route.startIndexFor; potem aktualizowany co klatkę)
         this.waypointIdx = 0;
-        // kąt celu z poprzedniej klatki (wantedDir oryginału, §8.5)
-        this.wantedDir = null;
-        // punkt celu z Radaru (radarX/radarY oryginału — cache między klatkami)
+        // aktualny punkt celu (cache — debug/overlay/następna klatka)
         this.target = null;
     }
 
     /**
-     * Jedna decyzja Mózgu dla bieżącej klatki (AI_Brain, §8.6).
+     * Jedna decyzja Mózgu dla bieżącej klatki.
      *
      * @param {Player} player motocykl (position, angle, speed, anglespeed)
      * @param {Array<{x:number,y:number}>} route punkty Trasy (pętla)
@@ -81,34 +79,26 @@ export default class Brain {
     decide(player, route, world = null) {
         if (!route || route.length === 0) {
             // brak Trasy → prosto (nic nie ryzykujemy)
+            this.target = null;
             return CMD.STRAIGHT;
         }
 
-        const prevTarget = this.target;
-        this.scan(player, route);
+        const count = route.length;
+        const nearest = this.findNearest(player, route);
+        this.waypointIdx = nearest.idx;
 
-        if (!this.target) {
-            // Radar niczego nie znalazł (nawet nigdy wcześniej) → prosto,
-            // bez testu na sucho (dx == dy == 0 w oryginale, §8.6)
-            return CMD.STRAIGHT;
-        }
+        // cel wybiega w przód wzdłuż pętli — jazda po linii wyścigu,
+        // nie od punkcika do punkcika
+        const look = this.lookaheadPoints();
+        this.target = route[(nearest.idx + look) % count];
 
-        this.updateWantedDir(player, prevTarget);
+        let cmd = this.cmdTo(this.target, player);
 
-        // wektor środek sprite'a → odczyt Radaru (do korekty w paśmie prostym)
-        const dToTarget = {
-            dx: this.target.x - player.position.x,
-            dy: this.target.y - player.position.y
-        };
-
-        const dAng = wrap180(this.wantedDir - player.angle);
-        const cmd = this.brainCmd(player, dAng, dToTarget);
-
-        // Fallback anty-kolizyjny (§8.6): jeśli wybrana komenda koliduje,
-        // próbuj −1, 0, +1 po kolei (naturalna jest ostatnią próbą ±1).
+        // Fallback anty-kolizyjny (§5.3): jeśli wybrana komenda koliduje,
+        // próbuj prosto → lewo → prawo (prosto pierwszy — nie tracimy prędkości).
         if (world != null && this.wouldCollide(player, cmd, world)) {
-            for (const probe of [CMD.LEFT, CMD.STRAIGHT, CMD.RIGHT]) {
-                if (!this.wouldCollide(player, probe, world)) {
+            for (const probe of [CMD.STRAIGHT, CMD.LEFT, CMD.RIGHT]) {
+                if (probe !== cmd && !this.wouldCollide(player, probe, world)) {
                     return probe;
                 }
             }
@@ -118,106 +108,65 @@ export default class Brain {
     }
 
     /**
-     * Drzewo decyzyjne (§8.6): dAng < −10° → lewo; pas środkowy (−10..21°)
-     * z korektą „marży" zależną od mode % 5 (doskok w stronę Radaru / prosto /
-     * powrót w lewo gdy przekręcił); dAng ≥ 21° → prawo.
+     * Wybieganie celu w przód wg trybu: mode 1 → 3 punkty (60 px,
+     * ostrożnie), mode 4 → 6 punktów (120 px — agresywne cięcie łuków).
      */
-    brainCmd(player, dAng, dToTarget) {
-        if (dAng < AI_TURN_LEFT_THRESH) {
-            return CMD.LEFT;
+    lookaheadPoints() {
+        return Math.min(6, Math.max(LOOKAHEAD_POINTS, 2 + (this.mode || 1)));
+    }
+
+    /**
+     * Najbliższy punkt Trasy: przeszukujemy okno indeksów wokół
+     * ostatniego waypointa (cígłość jazdy wzdłuż pętli); jeśli najlepszy
+     * traf w oknie jest dalej niż LOST_DISTANCE, robimy pełny skan pętli
+     * (start biegu / ekskursja poza Trasę).
+     */
+    findNearest(player, route) {
+        const count = route.length;
+        const head = player.position;
+
+        let bestIdx = null;
+        let bestDist = Infinity;
+        const scan = (from, to) => {
+            for (let k = from; k <= to; k += 1) {
+                const idx = ((k % count) + count) % count;
+                const p = route[idx];
+                const d = Math.hypot(p.x - head.x, p.y - head.y);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestIdx = idx;
+                }
+            }
+        };
+
+        scan(
+            this.waypointIdx - NEAREST_WINDOW_BACK,
+            this.waypointIdx + NEAREST_WINDOW_FWD
+        );
+
+        if (bestDist > LOST_DISTANCE) {
+            bestIdx = null;
+            bestDist = Infinity;
+            scan(0, count - 1);
         }
-        if (dAng >= AI_TURN_RIGHT_THRESH) {
+
+        return { idx: bestIdx, dist: bestDist };
+    }
+
+    /**
+     * Sterowanie wg błędu kątowego (kierunek na cel − kierunek jazdy):
+     * poza martwym pasem skręt, w pasie prosto — zero pompowania
+     * sterowaniem, maksymalna prędkość na prostych.
+     */
+    cmdTo(target, player) {
+        const err = wrap180(angleOfPoint(player, target) - player.angle);
+        if (err > DEAD_BAND_DEG) {
             return CMD.RIGHT;
         }
-
-        // Korekta w paśmie prostym (fizyka.md §8.6): „kąt" = bezwzględny
-        // kierunek na odczyt Radaru (atan2(dy,dx)·180/π + 90, zawinięty do
-        // ±180°) — oryginał NIE odejmuje tu kierunku gracza. „Marża" =
-        // −(mode % 5)·turnStep/2. turnStep oryginału (krok skrętu co klatkę)
-        // w tej fizyce ≈ physics.anglespeedAccel·dt/30.
-        const physics = player.physics || Player.PHYSICS_TYPE.SLOW;
-        const heading = wrap180(
-            Math.atan2(dToTarget.dy, dToTarget.dx) * 180 / Math.PI + 90
-        );
-        const lane = this.mode % AI_SCATTER_MOD;                 // 0..4
-        const turnStep = physics.anglespeedAccel * this.dt / 30;
-        const margin = -lane * turnStep / 2;                     // dzielenie w dół ku 0
-
-        if (margin < heading) {
-            // jeszcze blisko — czy da się dalej doskakiwać?
-            // (cap oryginału: steering < 2·turnStep — tu jako granica
-            // prędkości kątowej, bo port nie trzyma akumulatora steering)
-            if (lane * 3 < heading && (player.anglespeed || 0) < 2 * turnStep) {
-                return CMD.RIGHT;
-            }
-            return CMD.STRAIGHT;
+        if (err < -DEAD_BAND_DEG) {
+            return CMD.LEFT;
         }
-        return CMD.LEFT;                                         // przekręcił
-    }
-
-    /**
-     * Radar (§8.4): okno 10 punktów Trasy do przodu od bieżącego waypointa;
-     * wygrywa najbliższy punkt dalej niż 16 px od środka sprite'a.
-     * Scatter losowany per punkt, osobno na osie X i Y (rng).
-     * Bez trafu — cel z poprzedniej klatki zostaje (radarX/radarY oryginału).
-     */
-    scan(player, route) {
-        const count = route.length;
-        const head = player.position; // środek sprite'a = pozycja gracza
-        let best = Infinity;
-        let candidate = null;
-
-        for (let i = this.waypointIdx; i < this.waypointIdx + RADAR_LOOKAHEAD; i++) {
-            // zawinięcie indeksu do przodu (§8.3); rozmycie całkowite,
-            // jak rand()%scatter − scatter/2 w oryginale (§8.3)
-            const idx = ((i % count) + count) % count;
-            // rozmycie całkowite: rand()%scatter − scatter/2 (oryginał, §8.3);
-            // scatter == 0 → brak rozmycia (ochrona przed modulo przez 0)
-            const s = this.scatter;
-            const jx = s > 0 ? (Math.floor(this.rng() * s) % s) - Math.trunc(s / 2) : 0;
-            const jy = s > 0 ? (Math.floor(this.rng() * s) % s) - Math.trunc(s / 2) : 0;
-            const px = route[idx].x + jx;
-            const py = route[idx].y + jy;
-            const d = Math.hypot(px - head.x, py - head.y);
-            if (d < best && d > RADAR_MIN_DIST) {
-                best = d;
-                candidate = i;
-                this.target = { x: px, y: py };
-            }
-        }
-
-        if (candidate !== null) {
-            this.waypointIdx = candidate;
-            // zawinięcie do przodu: idx wykraczający poza Trasę → 0 (§8.4)
-            if (this.waypointIdx >= count) {
-                this.waypointIdx = 0;
-            }
-        }
-    }
-
-    /**
-     * Kąt celu (§8.5, AI_SetTargetDir): z delty odczytów Radaru
-     * klatka → klatka. Pierwsza klatka (brak starego odczytu):
-     * wantedDir = obecny kierunek gracza — dokładnie jak oryginał
-     * (`oldRadX == 0 → dir`), bez „poprawki artefaktu" sprzed review.
-     * Zostaje bez zmian, gdy odczyt się nie zmienił.
-     */
-    updateWantedDir(player, prevTarget) {
-        if (!prevTarget) {
-            // pierwsza klatka: kąt celu = obecny kierunek gracza (§8.5)
-            this.wantedDir = Util.normalizeAngle(player.angle);
-            return;
-        }
-        const dx = this.target.x - prevTarget.x;
-        const dy = this.target.y - prevTarget.y;
-
-        if (dx === 0 && dy === 0) {
-            return; // cel bez zmian — wantedDir zostaje
-        }
-
-        // konwencja gry: 0° = północ, rosnąco CW (+90, bo y ekranu w dół)
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-        this.wantedDir = Util.normalizeAngle(angle);
+        return CMD.STRAIGHT;
     }
 
     /**
@@ -300,6 +249,13 @@ export default class Brain {
 
 function frontVertexOf(player) {
     return player.frontVertex || { x: 0, y: -10 };
+}
+
+/** Kąt (0° = północ, rosnąco CW) z pozycji gracza do punktu. */
+function angleOfPoint(player, point) {
+    return Util.normalizeAngle(
+        Math.atan2(point.y - player.position.y, point.x - player.position.x) * 180 / Math.PI + 90
+    );
 }
 
 /** Zawinięcie kąta do przedziału (−180, 180]. */
