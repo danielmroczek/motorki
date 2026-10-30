@@ -60,35 +60,23 @@
                     <img class="trackpreview" src="" alt="">
                 </div>
 
-                <div class="players">
-                    <label>
-                        <input type="radio" name="playersCount" value="1" checked>
-                        <i class="fas fa-male"></i>
-                    </label>
-
-                    <label>
-                        <input type="radio" name="playersCount" value="2">
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                    </label>
-
-                    <label>
-                        <input type="radio" name="playersCount" value="3">
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                    </label>
-
-                    <!-- <label>
-                        <input type="radio" name="playersCount" value="3">
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                        <i class="fas fa-male"></i>
-                    </label> -->
-
-                    </select>
+                <!-- Stawka: 4 sloty, każdy przełącza cyklem
+                     pusty → człowiek → komputer (issue: spójne menu) -->
+                <div class="roster">
+                    <button type="button" class="slot" data-slot="0">
+                        <span class="slot-icon"></span>
+                    </button>
+                    <button type="button" class="slot" data-slot="1">
+                        <span class="slot-icon"></span>
+                    </button>
+                    <button type="button" class="slot" data-slot="2">
+                        <span class="slot-icon"></span>
+                    </button>
+                    <button type="button" class="slot" data-slot="3">
+                        <span class="slot-icon"></span>
+                    </button>
                 </div>
+                <p class="roster-hint">Kliknij slot: pusty → człowiek → komputer</p>
 
                 <!-- <div class="playercontrols">
                         <p>Player 1 - <span class="left">◄</span> , <span class="right">►</span></p>

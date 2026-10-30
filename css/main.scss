@@ -144,17 +144,62 @@ div.stage {
             // justify-content: stretch;
         }
 
-        div.players {
+        // Roster: 4 sloty na jednym poziomie (Ludzie + Komputery razem);
+        // slot przełącza człowieka ⇄ komputer, więc stawka zawsze = 4.
+        div.roster {
             flex-direction: row;
             display: flex;
             align-self: stretch;
             align-items: center;
             justify-content: space-around;
+
+            button.slot {
+                width: 4.4em;
+                height: 4.4em;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                background: scale-color($background, $lightness: -10%);
+                border: 1px solid transparent;
+                border-radius: .2em;
+                color: $light-text;
+                padding: 0;
+
+                .slot-icon {
+                    font-size: 2em;
+                    // pusty slot: delikatne przerywane kółko zamiast ikony
+                    width: 1em;
+                    height: 1em;
+                    border: 2px dashed scale-color($light-text, $alpha: -60%);
+                    border-radius: 50%;
+                }
+
+                .slot-icon.fa-male,
+                .slot-icon.fa-robot {
+                    border: 0;
+                    width: auto;
+                    height: auto;
+                }
+
+                &[data-state="human"] .slot-icon {
+                    color: #4fa3ff; // akcent "gracz"
+                }
+
+                &[data-state="computer"] .slot-icon {
+                    color: scale-color($light-text, $lightness: -15%);
+                }
+
+                &:hover {
+                    border-color: $accent-color;
+                }
+            }
         }
 
-        .fa-male {
-            margin: 0 -0.1em;
-            font-size: 1.5em;
+        p.roster-hint {
+            font-size: .75em;
+            opacity: .6;
+            text-align: center;
         }
 
         button.start {

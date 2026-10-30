@@ -1,6 +1,7 @@
 import Game from "./game.js";
 import TrackSelector from "./trackSelector.js";
 import Route from "./route.js";
+import RosterMenu from "./rosterMenu.js";
 
 window.addEventListener('load', () => {
     let app = new App();
@@ -19,9 +20,15 @@ class App {
 
     init() {
         this.initPaper();
+        this.initRoster();
         this.initTrackSelector();
         this.initRaceOverlays();
         this.start();
+    }
+
+    initRoster() {
+        this.rosterMenu = new RosterMenu(
+            document.querySelector('.roster'));
     }
 
     initPaper() {
@@ -87,6 +94,10 @@ class App {
             throw new Error("Invalid argument");
         }
 
+        // stawka (spec decyzja #17, przepisana na roster 4 slotów):
+        // kombinacja niemożliwa nie istnieje — slotów jest dokładnie 4
+        let { people, computers } = this.rosterMenu.summary();
+
         if (this.game) {
             //project.clear();
             view.remove();
@@ -94,11 +105,20 @@ class App {
         }
 
         let options = {
-            playersCount: document.querySelector('input[name=playersCount]:checked').value
+            playersCount: people,
+            computersCount: computers
         }
 
         this.game = new Game(options);
+        // restarty klawiszami 1/2/3 (w biegu) zmieniają stawkę poza menu —
+        // menu i magazyn mają od razu pokazywać nową stawkę
+        this.game.rosterChanged = (people) => this.rosterMenu.set(people);
         this.game.init();
+
+        // ?debug=true — uchwyt do instancji gry dla inspekcji z konsoli
+        if (new URLSearchParams(window.location.search).get('debug') === 'true') {
+            window.game = this.game;
+        }
 
         //TODO: Refactor. Reacting to change level event?
         let background = await this.game.loadLevel('tracks/' + track + '.svg');
@@ -209,7 +229,7 @@ class App {
 
             row.innerHTML = `
                 <td>${index + 1}.</td>
-                <td>${entry.player.color}</td>
+                <td>${entry.player.name || entry.player.color}</td>
                 <td>${(entry.total / 1000).toFixed(2)} s</td>
                 <td>${(entry.best / 1000).toFixed(2)} s</td>
                 <td>${entry.penaltyMs > 0 ? `+${entry.penaltyMs / 1000} s` : '-'}</td>
