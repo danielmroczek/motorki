@@ -167,20 +167,31 @@ div.stage {
   display: flex;
   align-self: stretch;
   align-items: center;
-  justify-content: space-around;
+  justify-content: center;
+  gap: 0;
 }
 .menu-container > div.menu div.roster button.slot {
   width: 4.4em;
   height: 4.4em;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.15em;
   cursor: pointer;
-  background: rgb(11.6470588235%, 11.6470588235%, 11.6470588235%);
-  border: 1px solid transparent;
-  border-radius: 0.2em;
-  color: white;
+  background: #1d1d1d;
+  border: 0;
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.9);
   padding: 0;
+}
+/* Pasek slotów: promień tylko na zewnętrznych narożnikach, żeby styki
+   sąsiednich slotów były proste i bez wcięć */
+.menu-container > div.menu div.roster button.slot:first-child {
+  border-radius: 0.2em 0 0 0.2em;
+}
+.menu-container > div.menu div.roster button.slot:last-child {
+  border-radius: 0 0.2em 0.2em 0;
 }
 .menu-container > div.menu div.roster button.slot .slot-icon {
   font-size: 2em;
@@ -189,20 +200,39 @@ div.stage {
   border: 2px dashed rgba(255, 255, 255, 0.4);
   border-radius: 50%;
 }
+.menu-container > div.menu div.roster button.slot .slot-keys {
+  font-family: "Inconsolata", monospace;
+  font-size: 0.6em;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+/* Flat look: zajęty slot ma pełne tło w kolorze kasku (paleta Material v2) */
+.menu-container > div.menu div.roster button.slot[data-state=human],
+.menu-container > div.menu div.roster button.slot[data-state=computer] {
+  background: var(--helmet);
+}
+.menu-container > div.menu div.roster button.slot[data-text=dark] {
+  color: rgba(0, 0, 0, 0.87);
+}
+.menu-container > div.menu div.roster button.slot[data-state=empty] {
+  opacity: 0.55;
+}
+.menu-container > div.menu div.roster button.slot[data-state=human] .slot-icon,
+.menu-container > div.menu div.roster button.slot[data-state=computer] .slot-icon {
+  border: 0;
+  width: auto;
+  height: auto;
+  color: inherit;
+}
+.menu-container > div.menu div.roster button.slot:hover {
+  filter: brightness(1.15);
+}
 .menu-container > div.menu div.roster button.slot .slot-icon.fa-male,
 .menu-container > div.menu div.roster button.slot .slot-icon.fa-robot {
   border: 0;
   width: auto;
   height: auto;
-}
-.menu-container > div.menu div.roster button.slot[data-state=human] .slot-icon {
-  color: #4fa3ff;
-}
-.menu-container > div.menu div.roster button.slot[data-state=computer] .slot-icon {
-  color: rgb(85%, 85%, 85%);
-}
-.menu-container > div.menu div.roster button.slot:hover {
-  border-color: #76ff03;
 }
 .menu-container > div.menu p.roster-hint {
   font-size: 0.75em;
@@ -273,6 +303,100 @@ div.stage .falstart {
   background: rgba(0, 0, 0, 0.7);
   border: 1px solid #ff5722;
 }
+div.stage .lineup-board {
+  position: absolute;
+  left: 50%;
+  top: 0.5rem;
+  transform: translateX(-50%);
+  min-width: 16rem;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1em 1.25em;
+  font-family: "Inconsolata", monospace;
+  background: rgb(21.6470588235%, 21.6470588235%, 21.6470588235%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+div.stage .lineup-board h2 {
+  margin: 0 0 0.25em;
+  font-size: 1.1em;
+}
+div.stage .lineup-board .lineup-track {
+  margin: 0 0 0.75em;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+div.stage .lineup-board .lineup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+div.stage .lineup-board .lineup-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.2em 0;
+  font-size: 0.95em;
+}
+div.stage .lineup-board .lineup-list li.is-computer {
+  opacity: 0.6;
+}
+div.stage .lineup-board .lineup-list .pole {
+  min-width: 3.2em;
+  opacity: 0.7;
+}
+div.stage .lineup-board .lineup-list .chip,
+div.stage .hud-legend .legend-list .chip {
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  background: var(--helmet);
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  flex: none;
+}
+div.stage .lineup-board .lineup-list .keys,
+div.stage .hud-legend .legend-list .keys {
+  margin-left: auto;
+  padding-left: 1em;
+  font-size: 0.85em;
+  color: #76ff03;
+}
+div.stage .lineup-board .lineup-hint {
+  margin: 0.75em 0 0;
+  font-size: 0.7em;
+  opacity: 0.6;
+}
+div.stage .hud-legend {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  padding: 0.4em 0.6em;
+  font-family: "Inconsolata", monospace;
+  font-size: 0.8em;
+  background: rgba(0, 0, 0, 0.6);
+}
+div.stage .hud-legend .legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+div.stage .hud-legend .legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  white-space: nowrap;
+}
+div.stage .hud-legend .legend-list li.is-computer {
+  opacity: 0.55;
+}
+div.stage .hud-legend .legend-hint {
+  margin: 0.35em 0 0;
+  font-size: 0.75em;
+  opacity: 0.5;
+  text-align: right;
+}
 div.stage .race-result {
   position: absolute;
   left: 50%;
@@ -296,12 +420,31 @@ div.stage .race-result table th,
 div.stage .race-result table td {
   padding: 0.25em 0.75em;
   text-align: left;
+  white-space: nowrap;
 }
 div.stage .race-result table th {
   border-bottom: 1px solid white;
 }
 div.stage .race-result table td:nth-child(2) {
-  text-transform: uppercase;
+  white-space: nowrap;
+}
+div.stage .race-result table td:nth-child(2) .chip,
+div.stage .race-result table td:nth-child(2) .keys {
+  vertical-align: middle;
+}
+div.stage .race-result .chip {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 0.35em;
+  border-radius: 50%;
+  background: var(--helmet);
+  border: 1px solid rgba(0, 0, 0, 0.6);
+}
+div.stage .race-result .keys {
+  margin-left: 0.6em;
+  font-size: 0.8em;
+  opacity: 0.75;
 }
 div.stage .race-result .pos-1 {
   color: #76ff03;

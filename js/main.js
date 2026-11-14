@@ -2,6 +2,7 @@ import Game from "./game.js";
 import TrackSelector from "./trackSelector.js";
 import Route from "./route.js";
 import RosterMenu from "./rosterMenu.js";
+import { HELMET_HEX } from "./lineup.js";
 
 window.addEventListener('load', () => {
     let app = new App();
@@ -52,6 +53,13 @@ class App {
         this.falstartOverlay = document.querySelector('.falstart');
         this.raceResultOverlay = document.querySelector('.race-result');
 
+        this.lineupBoard = document.querySelector('.lineup-board');
+        this.lineupList = this.lineupBoard.querySelector('.lineup-list');
+        this.lineupTrack = this.lineupBoard.querySelector('.lineup-track');
+        this.legend = document.querySelector('.hud-legend');
+        this.legendList = this.legend.querySelector('.legend-list');
+        this.lineupEntries = [];
+
         document.querySelector('button.to-menu').addEventListener('click', () => {
             this.backToMenu();
         });
@@ -85,8 +93,108 @@ class App {
         this.raceResultOverlay.classList.add('hidden');
         this.falstartOverlay.classList.add('hidden');
         this.lapBanner.classList.add('hidden');
+        this.lineupBoard.classList.add('hidden');
+        this.legend.classList.add('hidden');
+        this.clearLineupTimers();
         // a stale GO timeout would otherwise flip overlays after we left the race
         window.clearTimeout(this.goTimeout);
+    }
+
+    clearLineupTimers() {
+        window.clearTimeout(this.lineupTimeout);
+        if (this.lineupSkipHandler) {
+            document.removeEventListener('keydown', this.lineupSkipHandler);
+            this.lineupSkipHandler = null;
+        }
+    }
+
+    /**
+     * Plansza startowa: kolejność pól, kolor, nazwa i klawisze — każdy
+     * wie, kim jest i skąd startuje, zanim zgasną światła (ADR-0002).
+     */
+    showLineup(entries) {
+        this.lineupEntries = entries;
+
+        this.lineupList.innerHTML = '';
+        entries.forEach(entry => {
+            let li = document.createElement('li');
+            li.style.setProperty('--helmet', HELMET_HEX[entry.color]);
+            if (entry.computer) {
+                li.classList.add('is-computer');
+            }
+            li.innerHTML = `
+                <span class="pole">Pole ${entry.pole}</span>
+                <span class="chip"></span>
+                <span class="name">${entry.name}</span>
+                <span class="keys">${entry.controls ? entry.controls.label : 'komputer'}</span>
+            `;
+            this.lineupList.appendChild(li);
+        });
+
+        this.lineupTrack.textContent = this.trackSelector.getSelectedTrack() || '';
+        this.lineupBoard.classList.remove('hidden');
+
+        this.clearLineupTimers();
+        // plansza jest pomijalna i nie nalicza falstartu
+        this.lineupTimeout = window.setTimeout(() => this.beginCountdown(), App.LINEUP_MS);
+        this.lineupSkipHandler = e => {
+            if (e.code === 'Enter' || e.code === 'Space') {
+                this.beginCountdown();
+            }
+        };
+        document.addEventListener('keydown', this.lineupSkipHandler);
+    }
+
+    beginCountdown() {
+        if (!this.game || this.game.state !== 'lineup') {
+            this.clearLineupTimers();
+            return;
+        }
+        this.clearLineupTimers();
+        this.lineupBoard.classList.add('hidden');
+        this.game.proceed();
+    }
+
+    /** Legenda widoczna w odliczaniu i na 1. okrążeniu (H przełącza). */
+    showLegend() {
+        if (!this.lineupEntries.some(entry => !entry.computer)) {
+            // podgląd samych komputerów — nie ma kogo identyfikować
+            return;
+        }
+
+        this.legendList.innerHTML = '';
+        this.lineupEntries.forEach(entry => {
+            let li = document.createElement('li');
+            li.style.setProperty('--helmet', HELMET_HEX[entry.color]);
+            if (entry.computer) {
+                li.classList.add('is-computer');
+            }
+            li.innerHTML = `
+                <span class="chip"></span>
+                <span class="name">${entry.name}</span>
+                ${entry.controls ? `<span class="keys">${entry.controls.label}</span>` : ''}
+            `;
+            this.legendList.appendChild(li);
+        });
+        this.legend.classList.remove('hidden');
+        if (this.game) {
+            this.game.setMarkersVisible(true);
+        }
+    }
+
+    hideLegend() {
+        this.legend.classList.add('hidden');
+        if (this.game) {
+            this.game.setMarkersVisible(false);
+        }
+    }
+
+    toggleLegend() {
+        if (this.legend.classList.contains('hidden')) {
+            this.showLegend();
+        } else {
+            this.hideLegend();
+        }
     }
 
     async restart(track) {
@@ -94,9 +202,9 @@ class App {
             throw new Error("Invalid argument");
         }
 
-        // stawka (spec decyzja #17, przepisana na roster 4 slotów):
-        // kombinacja niemożliwa nie istnieje — slotów jest dokładnie 4
-        let { people, computers } = this.rosterMenu.summary();
+        // stawka: wpisy w kolejności slotów (kolor stały w sesji, klawisze
+        // przypisane do kolejności ludzi) — Game nie tasuje już kolorów
+        let slots = this.rosterMenu.entries();
 
         if (this.game) {
             //project.clear();
@@ -105,14 +213,12 @@ class App {
         }
 
         let options = {
-            playersCount: people,
-            computersCount: computers
+            playersCount: slots.filter(entry => !entry.computer).length,
+            computersCount: slots.filter(entry => entry.computer).length,
+            slots: slots
         }
 
         this.game = new Game(options);
-        // restarty klawiszami 1/2/3 (w biegu) zmieniają stawkę poza menu —
-        // menu i magazyn mają od razu pokazywać nową stawkę
-        this.game.rosterChanged = (people) => this.rosterMenu.set(people);
         this.game.init();
 
         // ?debug=true — uchwyt do instancji gry dla inspekcji z konsoli
@@ -131,10 +237,16 @@ class App {
 
         this.hideOverlays();
 
+        this.game.addEventListener('lineup', entries => {
+            this.hideOverlays();
+            this.showLineup(entries);
+        });
+
         this.game.addEventListener('countdown', () => {
             this.hideOverlays();
             this.goLabel.classList.add('hidden');
             this.countdownOverlay.classList.remove('hidden');
+            this.showLegend();
         });
 
         this.game.addEventListener('go', () => {
@@ -146,6 +258,10 @@ class App {
                 this.lapBanner.classList.remove('hidden');
                 this.lapBanner.textContent = 'Okrążenie 1/' + this.game.options.laps;
             }, 700);
+        });
+
+        this.game.addEventListener('legendtoggle', () => {
+            this.toggleLegend();
         });
 
         this.game.addEventListener('falstart', () => {
@@ -160,6 +276,10 @@ class App {
             // banner tracks the CURRENT lap: completing lap N puts the rider on lap N+1
             this.lapBanner.textContent = `Okrążenie ${data.lap + 1}/${this.game.options.laps}`;
             this.lapBanner.classList.remove('hidden');
+            if (data.lap >= 1 && this.game.humanPlayers.every(player => player.lapTimes.length >= 1)) {
+                // 1. okrążenie zamknięte przez wszystkich ludzi — koniec identyfikacji
+                this.hideLegend();
+            }
         });
 
         this.game.addEventListener('playerfinished', player => {
@@ -170,6 +290,7 @@ class App {
 
         this.game.addEventListener('racefinished', ranking => {
             this.lapBanner.classList.add('hidden');
+            this.hideLegend();
             this.showResults(ranking);
         });
 
@@ -227,9 +348,15 @@ class App {
                 row.classList.add('pos-1');
             }
 
+            let player = entry.player;
+            let keys = player.keySet
+                ? `<span class="keys">${player.keySet.label}</span>`
+                : '';
+
             row.innerHTML = `
                 <td>${index + 1}.</td>
-                <td>${entry.player.name || entry.player.color}</td>
+                <td><span class="chip" style="--helmet: ${HELMET_HEX[player.color]}"></span>
+                    ${player.name || player.color}${keys}</td>
                 <td>${(entry.total / 1000).toFixed(2)} s</td>
                 <td>${(entry.best / 1000).toFixed(2)} s</td>
                 <td>${entry.penaltyMs > 0 ? `+${entry.penaltyMs / 1000} s` : '-'}</td>
@@ -243,3 +370,6 @@ class App {
         this.raceResultOverlay.focus();
     }
 }
+
+/** Czas planszy startowej przed odliczaniem (pomijalnej). */
+App.LINEUP_MS = 3000;

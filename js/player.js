@@ -443,6 +443,9 @@ export default class Player extends EventEmitter{
 
     dispose() {
         this.body.remove();
+        if (this.marker) {
+            this.marker.remove();
+        }
         if (this.verbose) {
             this.debugVector.remove();
             this.debugBody.remove();
