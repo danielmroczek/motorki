@@ -4,9 +4,13 @@
  *   pusty → człowiek → komputer → pusty…
  * Slotów jest 4, więc stawka nigdy nie przekracza 4 zawodników; pusty slot
  * = mniejsza stawka (zgodnie z pulą kolorów i Start na torze).
- * Kolor motocykla losowany jest na starcie biegu (taski kolorów w Game),
- * więc slot w menu nie obiecuje żadnego koloru.
+ *
+ * Slot ma stały kolor kasku na całą sesję (losowany raz na wejście na stronę),
+ * więc menu pokazuje, kim gracz będzie — kolor i klawisze są widoczne przed
+ * Startem (ADR-0002).
  */
+
+import { buildEntries, colorsForSession, HELMET_HEX, isLightHelmet } from './lineup.js';
 
 const STATES = ['empty', 'human', 'computer'];
 
@@ -20,15 +24,21 @@ const NEXT_STATE = {
 export default class RosterMenu {
     /**
      * @param {HTMLElement} container element .roster z 4 przyciskami .slot
-     * @param {{onchange?: function, storage?: Storage}} [options]
+     * @param {{onchange?: function, storage?: Storage, rng?: function}} [options]
      */
-    constructor(container, { onchange = null, storage = (typeof window !== 'undefined' ? window.sessionStorage : null) } = {}) {
+    constructor(container, {
+        onchange = null,
+        storage = (typeof window !== 'undefined' ? window.sessionStorage : null),
+        rng = Math.random
+    } = {}) {
         this.container = container;
         this.onchange = onchange;
         this.storage = storage;
         // domyślnie: 1 człowiek + 3 komputery = pełna stawka
         // (pula 4 kolorów i 4 punkty startowe toru)
         this.states = ['human', 'computer', 'computer', 'computer'];
+        // kolor per slot — stały w sesji (restart biegu go nie zmienia)
+        this.colors = colorsForSession(storage, rng);
         this.restore();
         this.bind();
         this.render();
@@ -49,39 +59,48 @@ export default class RosterMenu {
     }
 
     /**
-     * Programatyczne ustawienie stawki (np. parę klawiszy 1/2/3 w biegu):
-     * N ludzi, reszta 4 slotów = Komputery. Menu i magazyn od razu
-     * odzwierciedlają nową stawkę, więc kolejna sesja przywróci to,
-     * co było na starcie ostatniego biegu.
+     * Stawka w kolejności slotów (bez pustych) — wejście dla Game.
+     * Zawiera kolor, nazwę i klawisze ludzi.
      *
-     * @param {number} people liczba ludzi 0–4 (reszta → Komputery)
+     * @returns {Array}
      */
-    set(people) {
-        const humans = Math.min(4, Math.max(0, people));
-        this.states = Array.from({ length: 4 }, (_, i) =>
-            i < humans ? 'human' : 'computer');
-        this.save();
-        this.render();
-        if (this.onchange) {
-            this.onchange(this.summary());
-        }
+    entries() {
+        return buildEntries(this.states, this.colors);
     }
 
     render() {
+        const entries = this.entries();
         this.container.querySelectorAll('.slot').forEach(slot => {
             const idx = parseInt(slot.dataset.slot, 10);
             const state = this.states[idx];
+            const color = this.colors[idx];
+            const entry = entries.find(e => e.slot === idx);
             const icon = slot.querySelector('.slot-icon');
             slot.dataset.state = state;
+            slot.dataset.color = color;
+            slot.style.setProperty('--helmet', HELMET_HEX[color]);
+            // na jasnym tle (biały/żółty kask) ikona i napis muszą być ciemne
+            slot.dataset.text = isLightHelmet(color) ? 'dark' : 'light';
+
+            let keys = slot.querySelector('.slot-keys');
+            if (!keys) {
+                keys = document.createElement('span');
+                keys.className = 'slot-keys';
+                slot.appendChild(keys);
+            }
+
             if (state === 'human') {
                 icon.className = 'slot-icon fas fa-male';
-                slot.title = 'Człowiek';
+                keys.textContent = entry && entry.controls ? entry.controls.label : '';
+                slot.title = `Człowiek — ${entry ? entry.name : color} — ${keys.textContent}`;
             } else if (state === 'computer') {
                 icon.className = 'slot-icon fas fa-robot';
-                slot.title = 'Komputer';
+                keys.textContent = '';
+                slot.title = `Komputer — ${entry ? entry.name : color}`;
             } else {
                 icon.className = 'slot-icon';
-                slot.title = 'Pusty slot';
+                keys.textContent = '';
+                slot.title = `Pusty slot — ${entry ? entry.name : color}`;
             }
         });
         this.container.dataset.summary = this.summaryString();
