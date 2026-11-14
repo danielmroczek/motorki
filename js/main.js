@@ -2,6 +2,8 @@ import Game from "./game.js";
 import TrackSelector from "./trackSelector.js";
 import Route from "./route.js";
 import RosterMenu from "./rosterMenu.js";
+import StartSound from "./startSound.js";
+import { STAGE } from "./startSequence.js";
 import { HELMET_HEX } from "./lineup.js";
 
 window.addEventListener('load', () => {
@@ -24,7 +26,45 @@ class App {
         this.initRoster();
         this.initTrackSelector();
         this.initRaceOverlays();
+        this.initShortcuts();
         this.start();
+    }
+
+    /**
+     * Reguła UX: Enter uruchamia widoczny przycisk primary (zielony),
+     * Esc — widoczny secondary (stłumiony); bez secondary Esc opuszcza bieg.
+     */
+    initShortcuts() {
+        document.addEventListener('keydown', e => {
+            if (e.repeat) {
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                // natywnie tylko gdy fokus jest już na primary; w przeciwnym
+                // razie (np. po kliknięciu slotu rostera) Enter startuje grę
+                const active = document.activeElement;
+                if (active instanceof HTMLButtonElement && active.classList.contains('primary')) {
+                    return;
+                }
+                this.activateButton('.primary');
+            } else if (e.key === 'Escape') {
+                if (!this.activateButton('.secondary') && this.game) {
+                    this.backToMenu();
+                }
+            }
+        });
+    }
+
+    /** Klika pierwszy widoczny przycisk pasujący do selektora. */
+    activateButton(selector) {
+        let button = Array.from(document.querySelectorAll(`button${selector}`))
+            .find(candidate => candidate.getClientRects().length > 0);
+        if (!button) {
+            return false;
+        }
+        button.click();
+        return true;
     }
 
     initRoster() {
@@ -63,19 +103,25 @@ class App {
         document.querySelector('button.to-menu').addEventListener('click', () => {
             this.backToMenu();
         });
+        document.querySelector('button.replay').addEventListener('click', () => {
+            if (this.game && this.game.state === 'results') {
+                this.game.restart();
+            }
+        });
     }
 
     start() {
         //this.restart(this.trackSelector.getDefaultTrack());
         document.querySelector('button.start').addEventListener('click', e => {
+            // gest użytkownika — jedyny moment, w którym wolno odblokować audio
+            this.startSound = this.startSound || new StartSound();
+            this.startSound.unlock();
             this.restart(this.trackSelector.getSelectedTrack());
         });
     }
 
     async backToMenu() {
         this.hideOverlays();
-
-        document.removeEventListener('keydown', this.raceKeyHandler);
 
         if (this.game) {
             view.remove();
@@ -88,7 +134,7 @@ class App {
     }
 
     hideOverlays() {
-        this.countdownOverlay.classList.remove('green');
+        this.countdownOverlay.classList.remove('green', 'stage-1', 'stage-2');
         this.countdownOverlay.classList.add('hidden');
         this.raceResultOverlay.classList.add('hidden');
         this.falstartOverlay.classList.add('hidden');
@@ -244,15 +290,21 @@ class App {
 
         this.game.addEventListener('countdown', () => {
             this.hideOverlays();
-            this.goLabel.classList.add('hidden');
+            this.goLabel.classList.remove('hidden');
+            this.goLabel.textContent = '';
             this.countdownOverlay.classList.remove('hidden');
             this.showLegend();
         });
 
+        this.game.addEventListener('countdownstage', ({ stage }) => {
+            this.applyCountdownStage(stage);
+            if (this.startSound) {
+                this.startSound.play(stage);
+            }
+        });
+
         this.game.addEventListener('go', () => {
-            // 'green' belongs on .countdown: CSS matches div.stage .countdown.green .light
-            this.countdownOverlay.classList.add('green');
-            this.goLabel.classList.remove('hidden');
+            // 'green' należy do .countdown — CSS: div.stage .countdown.green .light
             this.goTimeout = window.setTimeout(() => {
                 this.countdownOverlay.classList.add('hidden');
                 this.lapBanner.classList.remove('hidden');
@@ -294,32 +346,29 @@ class App {
             this.showResults(ranking);
         });
 
-        // restart (R/1/2/3 keys) re-enters this method; drop the previous handler first
-        let previousKeyHandler = this.raceKeyHandler;
-        this.raceKeyHandler = e => {
-            if (!this.game) {
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                this.backToMenu();
-                return;
-            }
-
-            if (e.key === 'Enter' && this.game.state === 'results') {
-                this.backToMenu();
-            }
-        };
-
-        if (previousKeyHandler) {
-            document.removeEventListener('keydown', previousKeyHandler);
-        }
-        document.addEventListener('keydown', this.raceKeyHandler);
-
 
         // hide menu (the full-size container intercepts clicks over the stage)
         document.querySelector('.menu-container').classList.add('hidden');
         this.game.start();
+    }
+
+    /**
+     * Etapy startu: czerwone lampki → pomarańczowe → zielone.
+     * Ten sam element `.go` niesie podpis etapu.
+     */
+    applyCountdownStage(stage) {
+        this.countdownOverlay.classList.remove('stage-1', 'stage-2', 'green');
+
+        if (stage === STAGE.PREPARE) {
+            this.countdownOverlay.classList.add('stage-1');
+            this.goLabel.textContent = 'Ready';
+        } else if (stage === STAGE.READY) {
+            this.countdownOverlay.classList.add('stage-2');
+            this.goLabel.textContent = 'Set';
+        } else if (stage === STAGE.START) {
+            this.countdownOverlay.classList.add('green');
+            this.goLabel.textContent = 'Go!';
+        }
     }
 
     /**

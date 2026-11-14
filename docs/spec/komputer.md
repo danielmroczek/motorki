@@ -19,7 +19,7 @@ LINEUP: plansza „Stawka" (pole startowe, kolor, klawisze; pomijalna) — patrz
 - W RACING, w każdej klatce: Mózg generuje komendę −1 / 0 / +1 (lewo / prosto /
   prawo), identyczną semantyką jak wciśnięcie klawisza przez człowieka.
 - Ukończenie = 4 okrążenia → ghost znika i przestaje kolidować, jak człowiek.
-- Podsumowanie: Komputery w rankingu jak ludzie (czas + kary; kary Komputera = 0).
+- Podsumowanie: Komputery w rankingu jak ludzie (czas biegu od zielonego + kary; kary Komputera = 0).
 
 ## Decyzje
 

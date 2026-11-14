@@ -6,6 +6,7 @@ import ResultsTable from './resultsTable.js';
 import Brain from './brain.js';
 import Route from './route.js';
 import StartReaction from './startReaction.js';
+import { buildStartSchedule, STAGE } from './startSequence.js';
 import { COLORS, HELMET_HEX, entriesFromCounts, isLightHelmet } from './lineup.js';
 
 export default class Game extends EventEmitter {
@@ -22,6 +23,8 @@ export default class Game extends EventEmitter {
             playersCount: 1,
             computersCount: 0,
             laps: 4,
+            // generator losowości (etap startu itd.; podmienialny w testach)
+            rng: Math.random,
             // stawka w kolejności slotów (RosterMenu.entries()); brak = z liczników
             slots: null
         }, options);
@@ -54,7 +57,10 @@ export default class Game extends EventEmitter {
         // race state machine: countdown -> racing -> results
         this.state = null;
         this.countdownElapsed = 0;
-        this.countdownDuration = 0;
+        // harmonogram 3 etapów startu (patrz startSequence.js)
+        this.startSchedule = [];
+        this.startStageIndex = -1;
+        this.countdownStage = null;
     }
 
     static async build(track) {
@@ -278,8 +284,31 @@ export default class Game extends EventEmitter {
     beginCountdown() {
         this.state = 'countdown';
         this.countdownElapsed = 0;
-        this.countdownDuration = Math.floor(Math.random() * 400) * 10 + 1500;
+        this.startSchedule = buildStartSchedule(this.options.rng);
+        this.startStageIndex = -1;
+        this.countdownStage = null;
         this.emit('countdown', this);
+        this.advanceCountdown();
+    }
+
+    /** Emituje etapy startu, których czas już nadszedł; start = `go()`. */
+    advanceCountdown() {
+        while (this.startStageIndex + 1 < this.startSchedule.length) {
+            let next = this.startSchedule[this.startStageIndex + 1];
+            if (this.countdownElapsed < next.at) {
+                return;
+            }
+            this.startStageIndex += 1;
+            this.countdownStage = next.stage;
+            this.emit('countdownstage', {
+                stage: next.stage,
+                game: this
+            });
+            if (next.stage === STAGE.START) {
+                this.go();
+                return;
+            }
+        }
     }
 
     go() {
@@ -360,6 +389,8 @@ export default class Game extends EventEmitter {
     }
 
     playerFinished(player) {
+        // czas biegu liczony od zielonego światła — postój na starcie też się liczy
+        player.finishTime = this.raceElapsed;
         player.finish();
         this.emit('playerfinished', player);
 
@@ -378,8 +409,10 @@ export default class Game extends EventEmitter {
             startReaction.commit(this.startSamples);
         }
 
+        // klasyfikacja: czas od zielonego (standing start liczy się każdemu)
+        // + kary; suma okrążeń służy już tylko najlepszemu okrążeniu
         let ranking = this.players.map(player => {
-            let total = player.lapTimes.reduce((sum, lapTime) => sum + lapTime, 0) + player.penaltyMs;
+            let total = player.finishTime + player.penaltyMs;
 
             return {
                 player: player,
@@ -583,10 +616,7 @@ export default class Game extends EventEmitter {
     tick(timediff) {
         if (this.state === 'countdown') {
             this.countdownElapsed += timediff;
-
-            if (this.countdownElapsed >= this.countdownDuration) {
-                this.go();
-            }
+            this.advanceCountdown();
 
             return;
         }

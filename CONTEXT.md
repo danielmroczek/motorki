@@ -13,7 +13,7 @@ Faza biegu, w której motocykle poruszają się i mierzone są okrążenia. Zacz
 _Avoid_: wyścig.
 
 **Odliczanie (countdown)**:
-Faza przed startem: zapalanie świateł z losowym rytmem, losowa pauza, zgaszenie świateł = legalny moment startu. Wzorowane na oryginale (losowe opóźnienie 1,5–5,5 s).
+Faza przed startem w trzech etapach: przygotowanie i gotowość (stały czas) oraz losowa pauza przed startem; zapalenie zielonych lampek = legalny moment startu. Etapy mają krótkie tony WebAudio (start wyższy).
 _Avoid_: intro, animacja startowa.
 
 **Falstart (jump start)**:
@@ -21,11 +21,11 @@ Próba ruszenia przed zgaszeniem świateł; każde wciśnięcie sterowania to +1
 _Avoid_: dyskwalifikacja.
 
 **Podsumowanie (results)**:
-Faza po zakończeniu jazdy: ranking końcowy z czasami; wyjście ręczne (przycisk/klawisz) wraca do menu.
+Faza po zakończeniu jazdy: ranking końcowy z czasami; Enter / R powtarza ten sam bieg, przycisk lub Esc wraca do menu.
 _Avoid_: ekran końcowy, game over.
 
 **Klasyfikacja (ranking)**:
-Ustalanie miejsc w Podsumowaniu wg łącznego czasu (okrążenia + kary), a nie czysto wg kolejności na mecie — kary mogą zmienić kolejność.
+Ustalanie miejsc w Podsumowaniu wg czasu biegu (od zielonego światła do mety) + kary, a nie wg sumy czasów okrążeń — postój na starcie liczy się każdemu, a kary mogą zmienić kolejność.
 
 **Okrążenie (lap)**:
 Pełne przejechanie trasy od linii startu-mety w dobrą stronę. Liczba okrążeń na bieg: 4.

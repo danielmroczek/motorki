@@ -69,6 +69,8 @@ export default class Player extends EventEmitter{
         // race (Bieg) bookkeeping
         this.penaltyMs = 0;
         this.lapTimes = [];
+        // czas od zielonego światła do przekroczenia mety (ustawiany w Game)
+        this.finishTime = null;
         this.finished = false;
 
         this.normalizedBodyVertices = [
