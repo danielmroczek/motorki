@@ -4,7 +4,7 @@ Odkryte przez grilling (2 rundy, Q1–Q16), 2026-10-28. Słownik: patrz `CONTEXT
 (Komputer, Radar, Mózg, Trasa, Scatter). Decyzje zasugerowane RE oryginału
 (`d:\docs\zuzel-analysis\fizyka.md` §5–§8, §10). ADR: `docs/adr/0001-...`
 (Trasa z losowego przesunięcia łuku toru). Tickets: GitHub issues
-`danielmroczek/kreski` #1–#4 (źródło prawdy dla stanu wykonania).
+`danielmroczek/motorki` #1–#4 (źródło prawdy dla stanu wykonania).
 
 ## Cykl życia
 

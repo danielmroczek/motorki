@@ -1,10 +1,10 @@
-# zuzel-simple
+# Motorki
 
 ## Co to jest
 
-Gra/symulacja żużlowa "Kreski" - wyścigi na torach zdefiniowanych w plikach SVG (6 torów, m.in. Bydgoszcz) z wyborem liczby zawodników (1–3) i tabelą wyników. Kolory kasków jak w prawdziwym żużlu: red / white / yellow / blue.
+Gra/symulacja żużlowa "Motorki" - wyścigi na torach zdefiniowanych w plikach SVG (6 torów, m.in. Bydgoszcz) z wyborem liczby zawodników (1–3) i tabelą wyników. Kolory kasków jak w prawdziwym żużlu: red / white / yellow / blue.
 
-Gra jest luźno wzorowana na [kreski.org (wersja 2001)](https://www.kreski.org/ver2001.html).
+Gra jest luźno wzorowana na oryginalnej grze [kreski.org (wersja 2001)](https://www.kreski.org/ver2001.html).
 
 ## Technologie
 
@@ -20,7 +20,7 @@ Kolizje są segmentowe (linie, bez pikseli). Zderzenie z innym motocyklem
 cofa ruch i tnie prędkość na pół. Uderzenie w ścianę toru to **ślizg**:
 składowa ruchu prostopadła do ściany jest odrzucana, a równoległa zostaje
 (tłumiona × 0.9) — motocykl jazie wzdłuż bandy zamiast zastygać w miejscu.
-Detale: GitHub issue `danielmroczek/kreski#4`, testy w `tests/`.
+Detale: GitHub issue `danielmroczek/motorki#4`, testy w `tests/`.
 
 ## Trasa Komputera (`Route`)
 
@@ -50,7 +50,7 @@ Route.forTrack(level, rng, true);                   // + overlay punktów (paper
 Domyślnie punktów nie rysujemy — trzeci argument (`debug = true`) zaznacza
 punkty Trasy na aktywnej warstwie paper.js (żółto-czerwone kółka; bez
 paper.js no-op). Detale:
-GitHub issue `danielmroczek/kreski#1`, ADR `docs/adr/0001-trasa-bota-...md`,
+GitHub issue `danielmroczek/motorki#1`, ADR `docs/adr/0001-trasa-bota-...md`,
 testy w `tests/route.test.js`.
 
 **Podgląd w grze:** uruchom stronę z parametrem `?debug=true`

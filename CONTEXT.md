@@ -1,11 +1,11 @@
-# Kreski
+# Motorki
 
-Gra żużlowa „Kreski" — jednoczęściowa gra wyścigowa na torach SVG. Ten dokument to wyłącznie słownik domeny (język projektu), nie specyfikacja.
+Gra żużlowa „Motorki" — jednoczęściowa gra wyścigowa na torach SVG. Ten dokument to wyłącznie słownik domeny (język projektu), nie specyfikacja.
 
 ## Language
 
 **Bieg (heat)**:
-Pojedyncza, skończona rozgrywka: odliczanie → jazda (kilka okrążeń) → podsumowanie. W oryginale (kreski.org 2001) na serię składa się wiele biegów — tu, na razie, seria = 1 bieg.
+Pojedyncza, skończona rozgrywka: odliczanie → jazda (kilka okrążeń) → podsumowanie. W oryginalnej grze (kreski.org 2001) na serię składa się wiele biegów — tu, na razie, seria = 1 bieg.
 _Avoid_: wyścig, race, mecz.
 
 **Jazda (racing)**:
