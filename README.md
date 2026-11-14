@@ -10,7 +10,8 @@ Gra jest luźno wzorowana na oryginalnej grze [kreski.org (wersja 2001)](https:/
 
 - Czysty JavaScript (ES modules)
 - paper.js — wektorowy canvas
-- Klasy: `Game`, `Level`, `Player`, `Vertex`, `Route`, `Brain`, `StartReaction`, `EventEmitter`, `ResultsTable`, `TrackSelector`
+- Klasy: `Game`, `Level`, `Player`, `Vertex`, `Route`, `Brain`, `StartReaction`, `EventEmitter`, `ResultsTable`, `TrackSelector`, `RosterMenu`
+- Moduł `js/lineup.js` — tożsamość graczy: kolor ⇄ slot, klawisze ⇄ kolejność ludzi (ADR-0002)
 - Szkielet HTML5 Boilerplate
 - Testy: [Vitest](https://vitest.dev) (`npm test`)
 
@@ -131,9 +132,17 @@ menu → **odliczanie** → **wyścig** → **podsumowanie** → menu.
 - **Odliczanie** — czerwone światła gaszą się po losowym czasie (1,5–5,5 s) i zapalają się na zielono ze napisem „GO". Wciśnięcie sterowania zgaszenie świateł oznacza **falstart** (+1 s kary, komunikat na ekranie).
 - **Start** — po zielonym świetle motocykl stoi na linii startu; rusza dopiero po wciśnięciu klawisza sterowania. To nadaje sens kary za falstart.
 - **Wyścig** — 4 okrążenia (pasek „Okrążenie X/4"); zawodnik, który przekroczy metę jako ostatni z aktualnie jadących, widzi napis „Meta!", a jego motocykl wygasza się (fade-out).
-- **Podsumowanie** — tabela rankingu: pozycja, kolor kasku (Kto), łączny czas (suma okrążeń + kary), najlepsze okrążenie oraz kary. Zwycięzca wyróżniony kolorem akcentu.
+- **Podsumowanie** — tabela rankingu: pozycja, chip koloru + nazwa (Kto, np. „Czerwony" albo „Komputer 1") ze skrótem klawiszy człowieka, łączny czas (suma okrążeń + kary), najlepsze okrążenie oraz kary. Zwycięzca wyróżniony kolorem akcentu.
 
-Klawisze w biegu: `1`/`2`/`3` — zmiana liczby zawodników (restart), `R` — restart, `P` — pauza, `Esc` — porzucenie biegu (powrót do menu), `Enter` — powrót do menu z podsumowania. Sterowanie: strzałki (gracz 1), `A`/`S` (gracz 2), `K`/`L` (gracz 3).
+Klawisze w biegu: `R` — restart biegu, `P` — pauza, `H` — legenda (kto kim jest i jak steruje), `Esc` — porzucenie biegu (powrót do menu), `Enter` — powrót do menu z podsumowania. Sterowanie zależy od **pozycji slotu**: 1 → strzałki, 2 → `A`/`S`, 3 → `K`/`L`, 4 → `Num 4`/`Num 6` (niezależnie od tego, ilu jest ludzi i które sloty są puste). Aliasy ergonomiczne (nie pokazywane w UI): `ArrowDown` skręca w prawo w 1. zestawie, `Num 5` skręca w lewo w 4. zestawie, a `,`/`.` działają w 4. zestawie na laptopach bez numpada. Zmiana liczby ludzi odbywa się wyłącznie w menu — skróty `1/2/3` w biegu zostały usunięte (ADR-0002).
+
+## Identyfikacja graczy
+
+Kolor kasku jest przypisany do slotu rostera i losowany **raz na wejście na stronę** (sesja), więc restart biegu (`R`) nie zmienia tym, kim jesteś. Klawisze są przypisane do **pozycji slotu** i się nie przesuwają: slot 1 → `◄ ►`, slot 2 → `A/S`, slot 3 → `K/L`, slot 4 → `Num 4/6` (dopasowanie po `e.code`, więc NumLock nie ma znaczenia). Puste sloty i Komputery nie zmieniają sterowania pozostałych — wybór slotu jest jednocześnie wyborem klawiszy.
+
+Przed każdym biegiem pojawia się **plansza „Stawka"**: pole startowe, chip koloru, nazwa i klawisze (pomijalna `Enter`/`Spacja`, bez falstartu). Pola startowe losowane są co bieg (permutacja indeksów — numer pola odpowiada realnemu miejscu na linii startu). Podczas odliczania widoczna jest **legenda HUD** (kolor + nazwa + klawisze) oraz **znaczniki klawiszy** przy motocyklach ludzi — znacznik znika, gdy dany motocykl ruszy ze startu; legenda zostaje do zamknięcia 1. okrążenia przez wszystkich ludzi. `H` przełącza legendę tylko w tym oknie (plansza, odliczanie, 1. okrążenie).
+
+
 
 ## Menu
 
@@ -142,6 +151,11 @@ cyklicznie **pusty → człowiek → komputer**. W sumie na starcie jest tyle
 motocykli, ile zajętych slotów (1–4; tyle ma tor punktów startowych i pula
 kolorów), więc niemożliwe stawki albo "za duże" pole nie istnieją. Wybór
 zapamiętywany jest w sesji (odświeżenie strony nie kasuje ustawienia).
-Domyslna stawka po świeżym załadowaniu: 1 człowiek (czerwony) + 3 komputery.
-0 ludzi dozwolone — podglądowa jazda samych Komputerów. Nazwy w rankingu:
-ludzie = kolor kasku, Komputery = „Komputer 1"…"N".
+Każdy slot ma **pełne tło w kolorze kasku** przypisanego na całą sesję (flat
+look), a sloty obsadzone człowiekiem pokazują swoje klawisze — jeszcze przed
+`Start` wiadomo, kim się będzie i jak się steruje. Klawisze zależą od pozycji
+slotu, nie od liczby graczy, więc można wybrać sobie sterowanie (np. sam slot 3
+= `K/L`). Domyslna stawka po świeżym załadowaniu: 1 człowiek + 3 komputery
+(kolor człowieka zależy od losowania sesji). 0 ludzi dozwolone — podglądowa jazda
+samych Komputerów (bez legendy i znaczników). Nazwy w rankingu:
+ludzie = polska nazwa koloru („Czerwony"), Komputery = „Komputer 1"…"N".

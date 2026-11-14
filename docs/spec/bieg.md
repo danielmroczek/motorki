@@ -5,10 +5,14 @@ Odkryte przez grilling (Q1–Q14). Słownik: patrz `CONTEXT.md`.
 ## Cykl życia
 
 ```
-MENU (App) ──Start──▶ COUNTDOWN ──GO──▶ RACING ──wszyscy ukończyli──▶ RESULTS ──przycisk / Enter / Esc──▶ MENU
+MENU (App) ──Start──▶ LINEUP (plansza stawki) ──▶ COUNTDOWN ──GO──▶ RACING ──wszyscy ukończyli──▶ RESULTS ──przycisk / Enter / Esc──▶ MENU
 ```
 
 P = pauza we wszystkich fazach (także odliczania). R = restart. Esc = porzucenie → menu.
+H = legenda (kto kim jest / jak steruje) — tylko w LINEUP, COUNTDOWN i na 1. okrążeniu.
+
+LINEUP: plansza „Stawka" (pole startowe, kolor, nazwa, klawisze; pomijalna `Enter`/`Spacja`,
+bez falstartu). Dodana przez ADR-0002 — decyzja #9 poniżej częściowo unieważniona.
 
 ## Decyzje
 
@@ -22,11 +26,11 @@ P = pauza we wszystkich fazach (także odliczania). R = restart. Esc = porzuceni
 | 6 | Klawisze | R = restart, Esc = porzucenie → menu, P = pauza. |
 | 7 | Dodatkowo | Brak ADR (decyzja tanie do odwrócenia); terminologia z CONTEXT.md („Bieg", „Okrążenie", „Falstart +1 s"). |
 | 8 | Brak wyścigu AI | Gracze = motocykle sterowane klawiszami; brak botów. |
-| 9 | Pozycje startowe | Istniejący losowy przydział startPoints + kolorów (jak dotychczas). |
+| 9 | Pozycje startowe | ~~Istniejący losowy przydział startPoints + kolorów (jak dotychczas).~~ **Zaktualizowane przez ADR-0002:** pola startowe losowane co bieg (permutacja indeksów), kolory przypisane do slotów rostera i stałe w sesji. |
 
 ## Seams
 
-- Stan w `Game` (`this.state`: `countdown` → `racing` → `results`), sterowany z `tick()` (pauza zamraża wszystko naturalnie).
+- Stan w `Game` (`this.state`: `lineup` → `countdown` → `racing` → `results`), sterowany z `tick()` (pauza zamraża wszystko naturalnie). W `lineup` tick nie liczy czasu ani nie rusza AI — czeka na `proceed()` z `App`.
 - `App` (main.js) zostaje w MENU i nasłuchuje eventów gry; overlaye to DOM, nie canvas.
 - Falstart: w fazie odliczania wciśnięcie sterowania NIE ustawia `Player.started` — tylko `penaltyMs += 1000` + event `falstart`.
 - Kolejność/ ranking: total = Σ czasy okrążeń + penaltyMs; bestLap = min(z lapów).
