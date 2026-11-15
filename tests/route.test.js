@@ -37,6 +37,62 @@ function routesDiffer(a, b) {
     });
 }
 
+/** Obwód zamkniętej pętli punktów (px). */
+function perimeterOf(points) {
+    let perimeter = 0;
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        perimeter += Math.hypot(b.x - a.x, b.y - a.y);
+    }
+    return perimeter;
+}
+
+/** Znak pola powierzchni pętli — orientacja (zgodnie/przeciwnie do zegara). */
+function signedArea(points) {
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        area += a.x * b.y - b.x * a.y;
+    }
+    return area / 2;
+}
+
+/** Ile razy pętla skręca „w drugą stronę” — dowód, że jest wklęsła. */
+function concaveTurns(points) {
+    let turns = 0;
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        const c = points[(i + 2) % points.length];
+        const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+        if (cross < 0) {
+            turns += 1;
+        }
+    }
+    return turns;
+}
+
+/**
+ * Tor „nerka”: pas wokół krzywej r(θ) = R·(1 + a·cos 2θ) — przy dużym `a`
+ * pętla Trasy jest **wklęsła** w talii (znak skrętu się zmienia), więc test
+ * sprawdza wykrywanie wnętrza także poza przypadkiem wypukłym.
+ */
+function peanutLevel(R = 120, a = 0.35, gap = 30, samples = 72) {
+    const ring = (dr) => Array.from({ length: samples }, (_, i) => {
+        const theta = 2 * Math.PI * i / samples;
+        const radius = R * (1 + a * Math.cos(2 * theta)) + dr;
+        return { x: 200 + radius * Math.cos(theta), y: 200 + radius * Math.sin(theta) };
+    });
+    const walls = [];
+    [gap / 2, -gap / 2].forEach(dr => {
+        const points = ring(dr);
+        points.forEach((p, i) => walls.push([p, points[(i + 1) % points.length]]));
+    });
+    return levelWith(walls);
+}
+
 describe('Route.forTrack — łuk środkowy', () => {
     it('zwraca punkty leżące pomiędzy ścianami', () => {
         const points = Route.forTrack(level);
@@ -73,31 +129,118 @@ describe('Route.forTrack — łuk środkowy', () => {
         expect(maxStep).toBeLessThanOrEqual(Route.ROUTE_STEP * 1.3);
     });
 
-    it('losuje wspólny boczny offset z rng — raz na bieg', () => {
-        // rng = 0.5 zawsze → offset zerowy; rng avaryjny → przesunięcie
-        const rnd = () => 0.5;
-        const neutral = Route.forTrack(level, rnd);
-        const other = Route.forTrack(level, () => 0.9);
-        expect(routesDiffer(neutral, other)).toBe(true);
+    it('forTrack losuje linię z rng — raz na bieg, po stronie wewnętrznej', () => {
+        const base = Route.baseLoop(level);
+        // rng = 0.5 → mediana rozkładu liniowego, czyli linia po wewnętrznej
+        const inner = Route.forTrack(level, () => 0.5);
+        expect(routesDiffer(base, inner)).toBe(true);
 
         // determinizm: ten sam rng → ta sama trasa
-        expect(Route.forTrack(level, () => 0.9)).toEqual(other);
+        expect(Route.forTrack(level, () => 0.5)).toEqual(inner);
 
-        // dwa różne losowania dają różne trasy (kryterium: ponowne
-        // uruchomienie biegu daje inny offset)
-        const seq = [0.9, 0.1];
-        let i = 0;
-        const a = Route.forTrack(level, () => seq[i++]);
-        i = 0;
-        const seq2 = [0.1, 0.9];
-        const b = Route.forTrack(level, () => seq2[i++]);
-        expect(routesDiffer(a, b)).toBe(true);
+        // u → 1 to skraj zewnętrzny pasa (przycięty do MAX_OFFSET_OUT)
+        const outer = Route.forTrack(level, () => 1 - 1e-9);
+        expect(routesDiffer(inner, outer)).toBe(true);
+    });
+
+    it('forField — linie leżą po wewnętrznej i skracają obwód', () => {
+        const base = Route.baseLoop(level);
+        const basePerimeter = perimeterOf(base);
+        const routes = Route.forField(level, 4, () => 0.5);
+        expect(routes).toHaveLength(4);
+
+        // żadna linia nie wychodzi na zewnątrz bazy — każda skraca okrążenie
+        routes.forEach(route => {
+            expect(perimeterOf(route)).toBeLessThan(basePerimeter);
+            route.forEach(p => {
+                expect(p.x).toBeGreaterThan(100);
+                expect(p.x).toBeLessThan(200);
+                expect(p.y).toBeGreaterThan(200);
+                expect(p.y).toBeLessThan(300);
+            });
+        });
+
+        // linie są rozdzielone (nie „bliźniaki”) — coraz dalej od bandy zewnętrznej
+        const xs = routes
+            .map(route => route[Route.startIndexFor(route, { x: 185, y: 250 })].x)
+            .sort((a, b) => a - b);
+        for (let i = 1; i < xs.length; i++) {
+            expect(xs[i] - xs[i - 1]).toBeGreaterThan(1);
+        }
+    });
+
+    it('forTrack — skraj zewnętrzny pasa ograniczony do MAX_OFFSET_OUT', () => {
+        const base = Route.baseLoop(level);
+        const outer = Route.forTrack(level, () => 1 - 1e-9);
+        expect(perimeterOf(outer)).toBeGreaterThan(perimeterOf(base));
+
+        // prawa prosta bazy: x = 185, szczelina 30 px (room = 15 px) →
+        // przesunięcie na zewnątrz = 0.2 · 15 = 3 px
+        const p = outer[Route.startIndexFor(outer, { x: 185, y: 250 })];
+        expect(p.x).toBeGreaterThan(187.4);
+        expect(p.x).toBeLessThan(188.6);
+    });
+
+    it('forField — odwrócona orientacja pętli (startPoints) nadal trzyma linie po wewnętrznej', () => {
+        const flipped = levelWith(SEGMENTS);
+        // kąt startowy 90° wymusza jazdę „pod prąd” pętli z radialLoop,
+        // więc orientLoopToStart odwraca kolejność punktów (normalna też
+        // zmienia znak — wnętrze musi być wykryte geometrycznie)
+        flipped.startPoints = [{ x: 185, y: 250, angle: 90 }];
+        const plain = Route.baseLoop(level);
+        const reversed = Route.baseLoop(flipped);
+        expect(Math.sign(signedArea(reversed))).toBe(-Math.sign(signedArea(plain)));
+
+        const basePerimeter = perimeterOf(reversed);
+        const routes = Route.forField(flipped, 3, () => 0.5);
+        expect(routes).toHaveLength(3);
+        routes.forEach(route => {
+            expect(perimeterOf(route)).toBeLessThan(basePerimeter);
+            route.forEach(p => {
+                expect(p.x).toBeGreaterThan(100);
+                expect(p.x).toBeLessThan(200);
+                expect(p.y).toBeGreaterThan(200);
+                expect(p.y).toBeLessThan(300);
+            });
+        });
+    });
+
+    it('forField — tor wklęsły (nerka): linie nadal po wewnętrznej', () => {
+        const concave = peanutLevel();
+        const base = Route.baseLoop(concave);
+        // sanity: pętla bazy naprawdę jest wklęsła (skręt zmienia znak)
+        expect(concaveTurns(base)).toBeGreaterThan(0);
+
+        const basePerimeter = perimeterOf(base);
+        const routes = Route.forField(concave, 3, () => 0.5);
+        expect(routes).toHaveLength(3);
+        routes.forEach(route => {
+            expect(perimeterOf(route)).toBeLessThan(basePerimeter);
+        });
+    });
+
+    it('forField — zero komputerów nie liczy geometrii i zwraca brak tras', () => {
+        let calls = 0;
+        const rng = () => { calls++; return 0.5; };
+        const noWalls = Object.create(Level.prototype);
+        noWalls.vertices = [];
+        expect(Route.forField(noWalls, 0, rng)).toEqual([]);
+        expect(calls).toBe(0);
+    });
+
+    it('forField — determinizm: ten sam rng daje te same trasy', () => {
+        const seq = [0.1, 0.7, 0.3, 0.9, 0.2, 0.4, 0.8, 0.6];
+        const run = () => {
+            let i = 0;
+            return Route.forField(level, 3, () => seq[i++]);
+        };
+        expect(run()).toEqual(run());
     });
 
     it('wskazuje startIndex — punkt Trasy najbliższy pozycji startowej', () => {
-        // rng = 0.5 → offset zerowy: pozycje punktów są deterministyczne,
-        // inaczej losowy boczny offset robi z tego test flaky
-        const points = Route.forTrack(level, () => 0.5);
+        // baza bez offsetu → pozycje punktów są deterministyczne (inaczej
+        // losowana linia robi z tego test flaky)
+        const points = Route.baseLoop(level);
         // start (185, 250) to dokładnie pierwszy punkt pętli (kąt 0)
         const idx = Route.startIndexFor(points, { x: 185, y: 250 });
         expect(points[idx]).toEqual(points[0]);

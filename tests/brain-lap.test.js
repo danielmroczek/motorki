@@ -118,7 +118,7 @@ function step(bikepos, cmd, level, dt = 1000 / 60) {
 describe("Brain — jazda do przodu po Trasie (user feedback: bez kręcenia bączków)", () => {
     it('Komputer okrąża owalny tor bez utykania (pełna pętla Trasy ≤ 12 s)', () => {
         const level = ovalLevel();
-        const route = Route.forTrack(level, () => 0.5); // zero offsetu — śr. linia
+        const route = Route.baseLoop(level); // baza bez offsetu — śr. linia
         const brain = new Brain({ mode: 2, rng: () => 0.5 });
         brain.waypointIdx = Route.startIndexFor(route, { x: 500, y: 400 - 140 });
 

@@ -59,6 +59,9 @@ export default class Brain {
         this.rng = rng;
         this.dt = dt;
 
+        // Trasa tego Komputera (Game przypisuje ją na starcie biegu — ADR-0003;
+        // decide() dostaje ją argumentem, więc pozostaje funkcją czystą)
+        this.route = null;
         // indeks najbliższego punktu Trasy (Game ustawia startowy przez
         // Route.startIndexFor; potem aktualizowany co klatkę)
         this.waypointIdx = 0;

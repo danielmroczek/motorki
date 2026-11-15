@@ -43,8 +43,6 @@ export default class Game extends EventEmitter {
         this.delta = 0;
         // elapsed race time since GO (ms; tick-accumulated, pause-safe)
         this.raceElapsed = 0;
-        // Route shared by all Computers (generated once per race — ADR-0001)
-        this.route = null;
         // Computer brains (parallel to computer players, scatter modes 1..4)
         this.brains = [];
         // Computer start reaction timestamps per player (index → ms after GO)
@@ -195,7 +193,9 @@ export default class Game extends EventEmitter {
             : entriesFromCounts(this.options.playersCount, this.options.computersCount);
         this.resultsTable.clear();
 
-        this.route = Route.forTrack(this.level);
+        // Trasy Komputerów: jedna baza + osobna linia na komputer (ADR-0003)
+        const computerCount = entries.filter(entry => entry.computer).length;
+        const routes = Route.forField(this.level, computerCount);
         this.lineup = [];
 
         for (let entry of entries) {
@@ -230,7 +230,8 @@ export default class Game extends EventEmitter {
                 player.computer = true;
                 player.mode = this.brains.length + 1;
                 let brain = new Brain({ mode: player.mode });
-                brain.waypointIdx = Route.startIndexFor(this.route, startPoint);
+                brain.route = routes[this.brains.length];
+                brain.waypointIdx = Route.startIndexFor(brain.route, startPoint);
                 this.brains.push(brain);
                 this.brainByPlayer.set(player, brain);
             } else {
@@ -638,7 +639,7 @@ export default class Game extends EventEmitter {
                 player.start();
             }
             if (brain && player.started) {
-                let cmd = brain.decide(player, this.route, {
+                let cmd = brain.decide(player, brain.route, {
                     level: this.level,
                     players: this.players
                 });

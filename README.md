@@ -27,36 +27,43 @@ Detale: GitHub issue `danielmroczek/motorki#4`, testy w `tests/`.
 
 Moduł `js/route.js` generuje z geometrii ścian toru (już sparsowanych przez
 `Level`) **łuk środkowy** toru, próbkowany o stałą gęstość (`ROUTE_STEP = 20 px`,
-skok dający gęstą linię jazdy). Na starcie biegu
-losowany jest **jeden wspólny boczny offset** (wartość z `rng`, ta sama dla
-wszystkich Komputerów w biegu), przesuwający trasę wzdłuż lokalnych normalnych
-— ograniczony do 2/3 dystansu do najbliższej ściany, więc trasa zawsze zostaje
-w torze. Ponowne uruchomienie biegu daje inny offset (ADR-0001).
+skok dający gęstą linię jazdy). Baza liczona jest **raz na bieg**
+(`Route.baseLoop`), a każdy Komputer dostaje **własną** linię: osobny offset
+w stronę **wnętrza** pętli, rozłożony stratyfikacją pasa — warstwy o równym
+prawdopodobieństwie rozkładu liniowego (gęstość maleje w stronę zewnętrzną) są
+tasowane, a bot trafia w środek swojej warstwy z jitterem do ±1/4 jej
+szerokości, więc linie nie są „bliźniacze". Pas jest przycięty od zewnątrz:
+`MAX_OFFSET_IN = 0.5` i `MAX_OFFSET_OUT = 0.2` dystansu do najbliższej ściany
+(czyli maks. 1/4 szczeliny od osi po stronie wewnętrznej) — trasa zawsze
+zostaje w torze. Ponowne uruchomienie biegu daje inne linie (ADR-0003).
 
 **Orientacja pętli** jest zgodna z zamierzonym kierunkiem jazdy toru:
-`forTrack` sprawdza najbliższy punkt startowy (`Level.startPoints[0].angle`)
+`baseLoop` sprawdza najbliższy punkt startowy (`Level.startPoints[0].angle`)
 i odwraca pętlę, gdy jej przebieg od startu prowadzi „pod prąd". Dzięki temu
 jazda „naprzód po pętli" (pure-pursuit) pokrywa się z kierunkiem startu
 człowieka, a przekraczanie linii mety zalicza okrążenia zamiast ustawiać
 flagę `cheat`.
 
-API (obie metody synchroniczne):
+API (wszystkie metody synchroniczne):
 
 ```js
-const points = Route.forTrack(level, rng);          // pętla [{x, y}]
-const idx = Route.startIndexFor(points, startPos);  // najbliższy punkt Trasy
+const routes = Route.forField(level, 3, rng);       // Trasa per komputer [{x, y}]
+const idx = Route.startIndexFor(routes[0], startPos); // najbliższy punkt Trasy
+const points = Route.forTrack(level, rng);          // jedna Trasa (wrapper)
 Route.forTrack(level, rng, true);                   // + overlay punktów (paper.js)
 ```
 
 Domyślnie punktów nie rysujemy — trzeci argument (`debug = true`) zaznacza
-punkty Trasy na aktywnej warstwie paper.js (żółto-czerwone kółka; bez
-paper.js no-op). Detale:
-GitHub issue `danielmroczek/motorki#1`, ADR `docs/adr/0001-trasa-bota-...md`,
-testy w `tests/route.test.js`.
+punkty Trasy na aktywnej warstwie paper.js (każda Trasa innym kolorem; bez
+paper.js no-op). `Route.drawDebug(routes)` rysuje całą stawkę — tak robi
+`?debug=true`. Detale:
+GitHub issue `danielmroczek/motorki#1`, ADR `docs/adr/0003-trasa-kazdego-...md`
+(wcześniej `0001`), testy w `tests/route.test.js`.
 
 **Podgląd w grze:** uruchom stronę z parametrem `?debug=true`
 (np. `http://127.0.0.1:5501/index.html?debug=true`) i wystartuj bieg —
-punkty Trasy pojawią się jako żółto-czerwone kropki na warstwie `players`.
+punkty Tras Komputerów pojawią się jako kolorowe kropki na warstwie `players`
+(bez Komputerów w stawce: sama linia środkowa).
 
 ## Mózg Komputera (`Brain`)
 

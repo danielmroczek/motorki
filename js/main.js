@@ -22,6 +22,8 @@ class App {
     }
 
     init() {
+        // ?debug=true — podgląd Tras Komputerów na torze
+        this.debugRoutes = new URLSearchParams(window.location.search).get('debug') === 'true';
         this.initPaper();
         this.initRoster();
         this.initTrackSelector();
@@ -276,8 +278,8 @@ class App {
         let background = await this.game.loadLevel('tracks/' + track + '.svg');
         document.querySelector('.stage').style.background = background;
 
-        // ?debug=true — podglądowy overlay Trasy (łuk środkowy toru)
-        if (new URLSearchParams(window.location.search).get('debug') === 'true') {
+        // ?debug=true — podglądowy overlay Tras (przed startem: sama baza)
+        if (this.debugRoutes) {
             this.showRouteDebug();
         }
 
@@ -286,6 +288,10 @@ class App {
         this.game.addEventListener('lineup', entries => {
             this.hideOverlays();
             this.showLineup(entries);
+            if (this.debugRoutes) {
+                // stawka gotowa — pokaż faktyczne Trasy Komputerów
+                this.showRouteDebug();
+            }
         });
 
         this.game.addEventListener('countdown', () => {
@@ -372,9 +378,9 @@ class App {
     }
 
     /**
-     * Rysuje punkty Trasy na warstwie players (na wierzchu toru) —
-     * podgląd na żywo generowanego łuku środkowego (issue #1).
-     * Rysowanie należy do Route (3. argument forTrack); tutaj tylko
+     * Rysuje punkty Tras Komputerów na warstwie players (na wierzchu toru) —
+     * podgląd linii, po których faktycznie jadą boty (ADR-0003).
+     * Rysowanie należy do Route (`Route.drawDebug`); tutaj tylko
      * aktywujemy właściwą warstwę, bo Route dodaje kropki do warstwy
      * aktywnej, a aplikacja ustawia insertItems = false.
      */
@@ -382,7 +388,13 @@ class App {
         const playersLayer = this.game.layers.players;
         const previouslyActive = project.activeLayer;
         playersLayer.activate();
-        Route.forTrack(this.game.level, Math.random, true);
+        const routes = this.game.brains.map(brain => brain.route).filter(Boolean);
+        if (routes.length > 0) {
+            Route.drawDebug(routes);
+        } else {
+            // brak Komputerów w stawce — pokaż samą bazę (środkową linię)
+            Route.drawDebug([Route.baseLoop(this.game.level)]);
+        }
         // paper.js nie pozwala przypisać project.activeLayer bezpośrednio
         previouslyActive.activate();
     }

@@ -3,7 +3,8 @@
 Odkryte przez grilling (2 rundy, Q1–Q16), 2026-10-28. Słownik: patrz `CONTEXT.md`
 (Komputer, Radar, Mózg, Trasa, Scatter). Decyzje zasugerowane RE oryginału
 (`d:\docs\zuzel-analysis\fizyka.md` §5–§8, §10). ADR: `docs/adr/0001-...`
-(Trasa z losowego przesunięcia łuku toru). Tickets: GitHub issues
+(Trasa z losowego przesunięcia łuku toru) i `docs/adr/0003-...` (osobna Trasa
+na każdy Komputer). Tickets: GitHub issues
 `danielmroczek/motorki` #1–#4 (źródło prawdy dla stanu wykonania).
 
 ## Cykl życia
@@ -27,7 +28,7 @@ LINEUP: plansza „Stawka" (pole startowe, kolor, klawisze; pomijalna) — patrz
 |---|--------|---------|
 | 10 | Unieważnienie #8 | Decyzja #8 spec biegów („brak botów") unieważniona przez tę decyzję. |
 | 11 | Port logiki | Pełny port 3 warstw oryginału: Trasa → Radar → Mózg (fizyka.md §8). |
-| 12 | Trasa | Generowana z geometrii toru SVG: łuk środkowy, losowy boczny offset **raz na bieg**, wspólny dla Komputerów; punkty o stałej gęstości, cyklizowane do przodu (`waypointIdx ≥ count → 0`). ADR-0001. |
+| 12 | Trasa | Generowana z geometrii toru SVG: łuk środkowy, **osobny** offset na każdy Komputer (raz na bieg, w stronę wnętrza pętli, gęstość liniowa, stratyfikacja — ADR-0003); punkty o stałej gęstości, cyklizowane do przodu (`waypointIdx ≥ count → 0`). |
 | 13 | Radar | Patrz §8.4 oryginału: 10 punktów Trasy do przodu, pierwszy dalej niż 16 px, obietnica celu = najdalszy punkt, jitter Scatter osobno co klatkę na osie X/Y. |
 | 14 | Mózg | Patrz §8.6 oryginału: dAng = kąt celu − kierunek; > +21° → prawo, < −10° → lewo, inaczej prósto z marżą. Fallback: jeśli ruch punktowany kończy kolizją (test na sucho), próbuje −1/0/1 po kolei. |
 | 15 | Scatter | mode 1–4 wg kolejności dodawania do stawki → jitter 3/2/1/0 px. |
