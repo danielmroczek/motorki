@@ -38,8 +38,9 @@ wzdłuż lokalnych normalnych, **w stronę wnętrza pętli**.
 - **Własność Trasy:** trasa żyje w `brain.route` (nie ma już `Game.route`);
   `Brain.decide(player, route, world)` zachowuje trasę argumentem, więc pozostaje
   funkcją czystą, a testy Mózgu karmią go dowolnymi tablicami.
-- **Overlay debugowy** (`?debug=true`) rysuje wszystkie Trasy stawki, każdą
-  innym kolorem — inaczej nie da się zweryfikować, że linie się rozjechały.
+- **Overlay debugowy** (`?debug=true`) rysuje wszystkie Trasy stawki — **kolorem
+  kasku swojego Komputera** (ADR-0004; wcześniej: każdą innym kolorem), więc
+  linię od razu przypisuje się do gracza, bez mapowania kolejności tras.
 
 ## Considered Options
 

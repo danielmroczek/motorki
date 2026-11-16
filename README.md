@@ -54,16 +54,19 @@ Route.forTrack(level, rng, true);                   // + overlay punktów (paper
 ```
 
 Domyślnie punktów nie rysujemy — trzeci argument (`debug = true`) zaznacza
-punkty Trasy na aktywnej warstwie paper.js (każda Trasa innym kolorem; bez
-paper.js no-op). `Route.drawDebug(routes)` rysuje całą stawkę — tak robi
-`?debug=true`. Detale:
+punkty Trasy na aktywnej warstwie paper.js (bez paper.js no-op; rysuje samą
+geometrię, więc fioletem — bez tożsamości gracza).
+`Route.drawDebug(routes)` rysuje całą stawkę — każdą Trasę **kolorem kasku
+swojego Komputera**, więc linia jest tożsama z graczem; wpis bez koloru dostaje
+`Route.BASE_DEBUG_COLOR` (fiolet, poza pulą kasków). Tak robi `?debug=true`
+(ADR-0004). Detale:
 GitHub issue `danielmroczek/motorki#1`, ADR `docs/adr/0003-trasa-kazdego-...md`
 (wcześniej `0001`), testy w `tests/route.test.js`.
 
 **Podgląd w grze:** uruchom stronę z parametrem `?debug=true`
 (np. `http://127.0.0.1:5501/index.html?debug=true`) i wystartuj bieg —
-punkty Tras Komputerów pojawią się jako kolorowe kropki na warstwie `players`
-(bez Komputerów w stawce: sama linia środkowa).
+punkty Tras Komputerów pojawią się jako kropki w kolorach kasków na warstwie
+`players` (bez Komputerów w stawce: fioletowa linia środkowa).
 
 ## Mózg Komputera (`Brain`)
 
