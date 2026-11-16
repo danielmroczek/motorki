@@ -72,22 +72,25 @@ export default class Route {
      *
      * @param {Level} level tor z {@link Level#vertices}
      * @param {function} [rng] generator [0,1) (domyślnie Math.random)
-     * @param {boolean} [debug=false] rysuj punkty Trasy (overlay debugowy)
+     * @param {boolean} [debug=false] rysuj punkty Trasy na warstwie paper.js
+     *   (sam podgląd geometrii — kolor bazy, bez tożsamości gracza)
      * @returns {Array<{x:number,y:number}>} zamknięta pętla punktów Trasy
      */
     static forTrack(level, rng = Math.random, debug = false) {
         const routes = Route.forField(level, 1, rng);
         if (debug) {
-            Route.drawDebug(routes);
+            Route.drawDebug([{ points: routes[0] }]);
         }
         return routes[0];
     }
 
     /**
-     * Overlay debugowy: zaznacza punkty Tras na aktywnej warstwie paper.js
-     * (każda Trasa innym kolorem). Bez paper.js no-op.
+     * Overlay debugowy: zaznacza punkty Tras na aktywnej warstwie paper.js.
+     * Każda Trasa rysowana kolorem kasku swojego Komputera — linia jest
+     * tożsama z graczem (ADR-0004). Bez paper.js no-op.
      *
-     * @param {Array<Array<{x:number,y:number}>>} routes pętle Tras
+     * @param {Array<{points:Array<{x:number,y:number}>, color?:string}>} routes
+     *   Trasa + kolor gracza (brak koloru → kolor bazy)
      */
     static drawDebug(routes) {
         drawDebugOverlay(routes);
@@ -176,14 +179,20 @@ function nearestPointIndex(points, pos) {
     return best;
 }
 
-/** Kolory punktów kolejnych Tras w overlayu debugowym. */
-const DEBUG_COLORS = ['#ffd400', '#00e5ff', '#ff4fd8', '#7dff4f'];
+/**
+ * Kolor punktów Trasy w overlayu debugowym, gdy nikt po niej nie jedzie
+ * (sama baza toru). Fiolet jest poza pulą kasków, więc nie da się pomylić
+ * z linią gracza (ADR-0004).
+ */
+export const BASE_DEBUG_COLOR = '#8e24aa';
 
 /**
- * Debug overlay: zaznacza punkty Tras na aktywnej warstwie paper.js
- * (każda Trasa innym kolorem, usuwa poprzedni overlay). Wywoływane tylko
- * z debug=true — normalny bieg nie rysuje nic (issue #1: "punktów
- * nie rysujemy").
+ * Debug overlay: zaznacza punkty Tras na aktywnej warstwie paper.js —
+ * każda Trasa kolorem kasku swojego Komputera, żeby linia była tożsama
+ * z graczem (usuwa poprzedni overlay). Wywoływane tylko z debug=true —
+ * normalny bieg nie rysuje nic (issue #1: "punktów nie rysujemy").
+ *
+ * @param {Array<{points:Array<{x:number,y:number}>, color?:string}>} routes
  */
 function drawDebugOverlay(routes) {
     if (typeof paper === 'undefined' || !paper.project) {
@@ -193,9 +202,9 @@ function drawDebugOverlay(routes) {
     paper.project.activeLayer.children
         .filter(child => child.data && child.data.routeDebug)
         .forEach(child => child.remove());
-    routes.forEach((points, routeIdx) => {
-        const color = DEBUG_COLORS[routeIdx % DEBUG_COLORS.length];
-        points.forEach(p => {
+    routes.forEach(route => {
+        const color = route.color || BASE_DEBUG_COLOR;
+        route.points.forEach(p => {
             const dot = new paper.Path.Circle(new paper.Point(p.x, p.y), 2.5);
             dot.strokeColor = color;
             dot.fillColor = color;

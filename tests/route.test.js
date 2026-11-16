@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import Level from '../js/level.js';
-import Route from '../js/route.js';
+import Route, { BASE_DEBUG_COLOR } from '../js/route.js';
 import Vertex from '../js/vertex.js';
 
 // zamknięty tor (pierścień): banda zewnętrzna 100..200 × 200..300
@@ -289,6 +289,63 @@ describe('Route.forTrack — łuk środkowy', () => {
         expect(minStep).toBeGreaterThanOrEqual(16);
     });
 
+});
+
+describe('Route.drawDebug — kolor linii = kolor gracza', () => {
+    /** Minimalny stub paper.js — zbiera kropki i pozwala sprawdzić kolory. */
+    function withPaper(run) {
+        const children = [];
+        class Circle {
+            constructor() {
+                this.data = {};
+                this.strokeColor = null;
+                this.fillColor = null;
+            }
+            remove() {
+                const idx = children.indexOf(this);
+                if (idx >= 0) {
+                    children.splice(idx, 1);
+                }
+            }
+        }
+        globalThis.paper = {
+            project: { activeLayer: { children, addChild: c => children.push(c) } },
+            Point: class { constructor(x, y) { this.x = x; this.y = y; } },
+            Path: { Circle },
+            view: { draw() {} }
+        };
+        try {
+            return run(children);
+        } finally {
+            delete globalThis.paper;
+        }
+    }
+
+    it('rysuje każdą Trasę kolorem swojego gracza', () => {
+        withPaper(children => {
+            Route.drawDebug([
+                { points: [{ x: 1, y: 1 }, { x: 2, y: 2 }], color: '#b71c1c' },
+                { points: [{ x: 3, y: 3 }], color: '#3f51b5' }
+            ]);
+            expect(children.map(c => c.fillColor)).toEqual([
+                '#b71c1c', '#b71c1c', '#3f51b5'
+            ]);
+            // stroke i fill tej samej barwy — kropka czytelna na torze
+            children.forEach(c => expect(c.strokeColor).toBe(c.fillColor));
+        });
+    });
+
+    it('bez koloru gracza używa koloru bazy, a poprzedni overlay czyści', () => {
+        withPaper(children => {
+            Route.drawDebug([{ points: [{ x: 1, y: 1 }], color: '#f9a825' }]);
+            expect(children).toHaveLength(1);
+
+            // ponowne rysowanie (np. po lineup) nie zostawia starych kropek
+            Route.drawDebug([{ points: [{ x: 5, y: 5 }] }]);
+            expect(children).toHaveLength(1);
+            expect(children[0].fillColor).toBe(BASE_DEBUG_COLOR);
+        });
+    });
 });
 
 function angleSpan(points) {

@@ -388,12 +388,18 @@ class App {
         const playersLayer = this.game.layers.players;
         const previouslyActive = project.activeLayer;
         playersLayer.activate();
-        const routes = this.game.brains.map(brain => brain.route).filter(Boolean);
+        // kolor linii bierzemy od gracza (właściciela koloru kasku), a nie
+        // od Mózgu — overlay jest debugiem, nie częścią logiki decyzyjnej
+        const routes = this.game.players
+            .filter(player => player.computer)
+            .map(player => ({ player, brain: this.game.brainByPlayer.get(player) }))
+            .filter(({ brain }) => brain && brain.route)
+            .map(({ player, brain }) => ({ points: brain.route, color: player.helmetColor }));
         if (routes.length > 0) {
             Route.drawDebug(routes);
         } else {
             // brak Komputerów w stawce — pokaż samą bazę (środkową linię)
-            Route.drawDebug([Route.baseLoop(this.game.level)]);
+            Route.drawDebug([{ points: Route.baseLoop(this.game.level) }]);
         }
         // paper.js nie pozwala przypisać project.activeLayer bezpośrednio
         previouslyActive.activate();
